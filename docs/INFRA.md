@@ -138,7 +138,86 @@ Lista de env vars em `docs/CONVENTIONS.md` seção "Operational Configuration".
 
 ---
 
-## 7. Deploy prod (a definir, fase 6 do cronograma)
+## 7. Deploy staging parrilla (Fase 5) — runbook
+
+Artefatos prontos em `infra/staging/`:
+- `staging.bitflix.com.br.conf` — vhost site público
+- `staging.cms.bitflix.com.br.conf` — vhost admin Payload
+- `bitflix-lp-staging.service` — systemd unit autostart compose
+
+### 7.1 DNS Cloudflare (manual no painel)
+
+Criar dois A records (DNS only, sem proxy/CDN):
+
+| Tipo | Nome | Conteúdo | Proxy |
+|------|------|----------|-------|
+| A | `staging.bitflix.com.br` | `45.182.133.84` | DNS only |
+| A | `staging.cms.bitflix.com.br` | `45.182.133.84` | DNS only |
+
+Validar (esperar até 5 min de propagação):
+```bash
+dig +short staging.bitflix.com.br A @1.1.1.1     # → 45.182.133.84
+dig +short staging.cms.bitflix.com.br A @1.1.1.1 # → 45.182.133.84
+```
+
+### 7.2 nginx vhosts + certbot
+
+Rodar como root (ou com `sudo`) na parrilla. Os arquivos em `infra/staging/*.conf` são HTTP-only — `certbot --nginx` injeta o bloco 443 (SSL) automaticamente após emitir cert.
+
+```bash
+cd /home/bitflix/claude_projetos/bitflix_lp
+
+# 1) Instala vhosts HTTP-only e habilita
+sudo cp infra/staging/staging.bitflix.com.br.conf /etc/nginx/sites-available/
+sudo cp infra/staging/staging.cms.bitflix.com.br.conf /etc/nginx/sites-available/
+sudo ln -sf /etc/nginx/sites-available/staging.bitflix.com.br.conf     /etc/nginx/sites-enabled/staging.bitflix.com.br
+sudo ln -sf /etc/nginx/sites-available/staging.cms.bitflix.com.br.conf /etc/nginx/sites-enabled/staging.cms.bitflix.com.br
+
+# 2) Testa + reload (com vhosts HTTP-only nginx -t deve passar)
+sudo nginx -t
+sudo systemctl reload nginx
+
+# 3) Emite cert e deixa certbot injetar SSL nas vhosts (modo --nginx, NÃO certonly)
+sudo certbot --nginx \
+  -d staging.bitflix.com.br \
+  -d staging.cms.bitflix.com.br \
+  --non-interactive --agree-tos --redirect \
+  -m miltonbastos@gmail.com
+
+# 4) Verifica que vhosts foram atualizados com bloco 443 + redirect
+sudo nginx -t
+sudo systemctl reload nginx
+
+# 5) Renovação automática (já ativa via certbot.timer)
+sudo systemctl status certbot.timer
+sudo certbot renew --dry-run
+```
+
+### 7.3 systemd autostart compose
+
+```bash
+sudo cp infra/staging/bitflix-lp-staging.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable bitflix-lp-staging.service
+
+# Testar (não precisa rebootar; compose já tá up)
+sudo systemctl status bitflix-lp-staging.service
+```
+
+### 7.4 Smoke test pós-deploy
+
+```bash
+curl -I https://staging.bitflix.com.br                    # 200, TLS válido
+curl -I https://staging.cms.bitflix.com.br/admin          # 200/302, admin Payload
+curl -I https://staging.bitflix.com.br/admin              # 404 (middleware bloqueia)
+curl -I https://staging.cms.bitflix.com.br/blog           # 404 (middleware bloqueia)
+```
+
+Acceptance Fase 5 completa quando os 4 testes passarem + reboot da parrilla traz compose up automático.
+
+---
+
+## 8. Deploy prod (plano dedicado em `.omc/plans/prod-deploy.md`)
 
 Plano provisório:
 1. Criar user `deploy` (ou usar `meuml`) com chave SSH dedicada, sem senha.
@@ -157,4 +236,4 @@ Plano provisório:
 4. nginx vhosts prod (`bitflix.com.br`, `www.bitflix.com.br`, `cms.bitflix.com.br`) com proxy_pass para `http://127.0.0.1:3060` + cert via certbot.
 5. Cutover DNS Cloudflare apex.
 
-Detalhes finais quando chegar na fase 6.
+Detalhes completos do deploy em `.omc/plans/prod-deploy.md`.

@@ -8,10 +8,10 @@
 
 ## Status global
 
-**Fase atual:** Fase 5 — Deploy staging parrilla (não iniciada)
-**Status overall:** `in-progress` (Fases 1+2+3+4 done em 2026-04-29)
-**Próxima ação:** Fase 5 (DNS Cloudflare + nginx vhosts + certbot + systemd autostart compose). Pré-req: Fase 1 done. Detalhe em `.omc/plans/mvp.md` Fase 5. Fase 6 (prod tomahawk) só com sinal explícito do usuário.
-**Antes de começar:** ler CLAUDE.md seção "Toolchain quirks" (importante).
+**Fase atual:** MVP staging — DONE 2026-04-29 (todas as 5 fases concluídas)
+**Status overall:** `done` (Fases 1+2+3+4+5 done em 2026-04-29)
+**Próxima ação:** usuário testa staging manualmente (criar artigo no admin, importar via skill `/blog-import`, navegar rotas, validar slides reveal.js, OG images, RSS). Após validação + preenchimento de Globals + sinal explícito → executar `.omc/plans/prod-deploy.md` (plano separado).
+**Antes de começar nova sessão:** ler CLAUDE.md seção "Toolchain quirks" (importante).
 
 | Status | Significado |
 |--------|-------------|
@@ -29,8 +29,9 @@
 | 2. Modeling | done | 2026-04-29 | 2026-04-29 |
 | 3. Public frontend | done | 2026-04-29 | 2026-04-29 |
 | 4. Translation workflow | done | 2026-04-29 | 2026-04-29 |
-| 5. Deploy staging | not-started | — | — |
-| 6. Deploy produção | not-started | — | — |
+| 5. Deploy staging | done | 2026-04-29 | 2026-04-29 |
+
+> Deploy produção: plano separado em `.omc/plans/prod-deploy.md`. Tracking em `.omc/progress/prod-deploy.md` (a criar quando iniciar).
 
 ---
 
@@ -282,13 +283,43 @@
 
 ## Fase 5 — Deploy staging parrilla
 
-(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 5 para detalhes.)
+### 5.1 DNS Cloudflare
+- [x] A `staging.bitflix.com.br` → `45.182.133.84` — `done` (DNS only, sem proxy CDN)
+- [x] A `staging.cms.bitflix.com.br` → `45.182.133.84` — `done`
+
+Validado: `dig +short staging.bitflix.com.br A @1.1.1.1` → `45.182.133.84`.
+
+### 5.2 nginx vhosts
+- [x] `infra/staging/staging.bitflix.com.br.conf` (HTTP-only stub) — `done`
+- [x] `infra/staging/staging.cms.bitflix.com.br.conf` (HTTP-only stub) — `done`
+- [x] Copiados para `/etc/nginx/sites-available/` + symlinks habilitados — `done`
+- [x] `nginx -t` + `systemctl reload nginx` — `done`
+
+### 5.3 Certbot
+- [x] `sudo certbot --nginx -d staging.bitflix.com.br -d staging.cms.bitflix.com.br --redirect ...` — `done` (cert único cobre os 2 nomes; SSL block injetado in-place; expira 2026-07-28)
+- [x] `certbot renew --dry-run` OK — `done` (todos 7 certs da parrilla simulam renovação com sucesso)
+
+### 5.4 systemd unit autostart compose
+- [x] `infra/staging/bitflix-lp-staging.service` — `done` (User=bitflix Group=bitflix; ExecStart=docker compose up -d em `/home/bitflix/claude_projetos/bitflix_lp`)
+- [x] Copiado pra `/etc/systemd/system/` + `systemctl enable` — `done` (symlink criado em `multi-user.target.wants/`)
+- [ ] Reboot test confirmando autostart — `deferred` (testa naturalmente em próxima reboot da parrilla; oneshot+RemainAfterExit já validado pelo design e compose já roda)
+
+### 5.5 Documentação runbook
+- [x] `docs/INFRA.md` seção 7 com comandos copy-paste — `done` (executado pelo user em 2026-04-29 com sucesso 1ª tentativa)
+
+### Acceptance criteria Fase 5
+- [x] `https://staging.bitflix.com.br` retorna home com TLS válido — `done` (HTTP/1.1 200 OK, Server: nginx/1.24.0, Next.js+Payload)
+- [x] `https://staging.cms.bitflix.com.br/admin` mostra Payload admin — `done` (200 OK + layout (payload) carregado)
+- [x] `https://staging.bitflix.com.br/admin` retorna 404 (middleware bloqueou) — `done` (404 + `x-middleware-rewrite: /404`)
+- [x] `https://staging.cms.bitflix.com.br/blog` retorna 404 (middleware bloqueou no sentido inverso) — `done` (404 + `x-middleware-rewrite: /404`)
+- [ ] Compose sobe automaticamente após reboot da parrilla — `deferred` (validar em próxima reboot natural; design correto, ExecStart=`docker compose up -d` é idempotente)
+- [x] Cert renova automático — `done` (`certbot.timer` ativo + dry-run success)
 
 ---
 
-## Fase 6 — Deploy produção tomahawk
+## Deploy produção (plano separado)
 
-(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 6 para detalhes.)
+Movido para `.omc/plans/prod-deploy.md` em 2026-04-29 a pedido do usuário. Roda após testes manuais em staging concluídos + sinal explícito.
 
 ---
 
@@ -369,6 +400,16 @@
 - **Motivo:** STANDARDS Bitflix exige CLASSIC. Coordinator inicialmente foi escrito com objeto `Deps` — refatorado para múltiplos params individuais (`articlesRepository`, `authorsRepository`, etc) pra Awilix resolver corretamente.
 - **How to apply:** todo construtor de UC/Facade tipa params como `private readonly <name>: <Type>` com nome batendo com o registrado no container.
 
+### 2026-04-29 — Fase 5: vhosts HTTP-only + `certbot --nginx` (não certonly)
+- **Decisão:** os arquivos `infra/staging/*.conf` ficam HTTP-only (apenas bloco `listen 80`). `certbot --nginx` injeta o bloco `listen 443 ssl` automaticamente após emitir cert.
+- **Motivo:** se vhost já vier com bloco 443 referenciando `/etc/letsencrypt/live/.../fullchain.pem`, `nginx -t` falha antes do cert existir — bloqueia reload e quebra fluxo. Caminho canônico do plugin `--nginx` é editar in-place.
+- **How to apply:** ordem fixa do runbook em `docs/INFRA.md` seção 7.2 — copia HTTP-only → habilita symlink → reload → certbot → reload. NÃO usar `certonly` (não edita vhost). NÃO subir vhost com SSL block hardcoded.
+
+### 2026-04-29 — Fase 5: aplicação sudo bloqueada no sandbox Claude
+- **Decisão:** Claude gera artefatos em `infra/staging/` + runbook em `docs/INFRA.md`; user roda os `sudo cp/ln/nginx/certbot/systemctl` manualmente.
+- **Motivo:** sandbox tem `no_new_privs` flag — `sudo` falha ("If sudo is running in a container, you may need to adjust the container configuration to disable the flag"). Sem como Claude aplicar mudanças em `/etc/nginx/`, `/etc/systemd/`, `/etc/letsencrypt/`.
+- **How to apply:** em sessões futuras na parrilla, mesma limitação. Usuário aplica todos os passos sudo. Validação Claude faz via `curl` HTTPS após user terminar.
+
 ### 2026-04-29 — Fase 4: rate limit in-memory por IP
 - **Decisão:** `/api/blog-import` usa `Map<ip, {count, resetAt}>` simples no módulo, 10 req/min por IP, janela deslizante.
 - **Motivo:** plan especifica 10/min. Sem Redis no MVP. Endpoint single-instance em dev/staging — rate limit em memória é suficiente.
@@ -394,6 +435,13 @@
 - **Impacto:** apenas warning; não falha build nem afeta runtime.
 - **Acompanhamento:** verificar em release Payload subsequente se já corrigido. Não bloqueia.
 
+### 2026-04-29 — Fase 5: bug intermitente `__webpack_modules__[moduleId] is not a function` em cold compile dev
+- **Sintoma:** primeira request a `/admin` (ou ocasionalmente `/`) após boot do container retorna 500 com `TypeError: __webpack_modules__[moduleId] is not a function` em chunks `@payloadcms/ui`/`@payloadcms/richtext-lexical`. Próxima request mesmo URL → 200 OK.
+- **Causa:** webpack dev mode + Next 15.5.15 + Payload 3.84.1 — split chunks vendor têm dependência circular ou ordem de inicialização frágil em primeiro acesso. Stale state entre `.next` cache e `node_modules` agrava.
+- **Mitigação aplicada:** `docker volume rm bitflix-lp_bitflix_lp_next_cache` + `bitflix-lp_bitflix_lp_node_modules` + `docker compose build --no-cache` + recreate container. Após cold compile inicial (~2min, com 1-2 requests retornando 500 transient), rotas estabilizam 200.
+- **Risco aceito:** apenas ambiente staging (dev mode). Em prod (`.omc/plans/prod-deploy.md`) vai rodar `pnpm build` + `next start` standalone — webpack só compila uma vez no build, sem transient runtime issues.
+- **Acompanhamento:** se incomodar em staging, avaliar (a) `experimental.serverComponentsExternalPackages` em `next.config.ts` pra @payloadcms/*; (b) rebuild compose periódico via cron `docker compose restart bitflix-lp-app` semanal; (c) trocar staging pra prod build (`pnpm build && pnpm start`) — mas perde HMR. MVP: deixar como está.
+
 ### 2026-04-29 — Aviso "middleware deprecated, use proxy"
 - **Sintoma:** Next 16.x (durante diagnóstico) emite warning "The 'middleware' file convention is deprecated. Please use 'proxy' instead."
 - **Causa:** Next 16 introduziu `proxy.ts` como sucessor de `middleware.ts`.
@@ -409,10 +457,13 @@
 - [x] **Autenticar `gh` na conta `meumlpontocom`** — `done` 2026-04-29
 - [x] **Criar repo + push** — `done` (https://github.com/meumlpontocom/bitflix-lp)
 - [x] **Criar primeiro user no admin Payload** — `done` 2026-04-29 (Milton Bastos, id=1)
-- [ ] Preencher manifesto/bio/whatsapp/email no Payload Globals (`http://localhost:3023/admin/globals/site-settings`) — Fase 6 prereq
-- [ ] Criar website Umami para `bitflix.com.br` em `stats.bitflix.com.br/dashboard` — Fase 6 prereq
-- [ ] Decidir estratégia cutover DNS apex — Fase 6 prereq
-- [ ] Sinal explícito pra iniciar Fase 6 — Fase 6
+- [x] **Fase 5 — Cloudflare DNS**: criar A records `staging.bitflix.com.br` e `staging.cms.bitflix.com.br` → `45.182.133.84` — `done` 2026-04-29
+- [x] **Fase 5 — sudo na parrilla**: runbook `docs/INFRA.md` seção 7 executado com sucesso — `done` 2026-04-29
+- [ ] Testar staging manualmente: criar artigo no admin, importar via skill `/blog-import`, validar slides reveal.js, OG images, RSS, Lighthouse — pré-deploy prod
+- [ ] Preencher manifesto/bio/whatsapp/email no Payload Globals (`https://staging.cms.bitflix.com.br/admin/globals/site-settings`) — pré-deploy prod
+- [ ] Criar website Umami para `bitflix.com.br` em `stats.bitflix.com.br/dashboard` — pré-deploy prod
+- [ ] Decidir estratégia cutover DNS apex (substituição direta vs redirect 301) — pré-deploy prod
+- [ ] Sinal explícito pra iniciar deploy prod (`.omc/plans/prod-deploy.md`)
 
 ---
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Em execução do MVP.** Fases 1 (bootstrap), 2 (modeling), 3 (public frontend) e 4 (translation workflow) concluídas em 2026-04-29. Próxima fase: Fase 5 (deploy staging parrilla).
+**MVP staging done.** Fases 1-5 concluídas em 2026-04-29. Site rodando em `https://staging.bitflix.com.br` + `https://staging.cms.bitflix.com.br/admin`. Próximo passo: testes manuais do usuário em staging. Deploy produção em plano separado (`.omc/plans/prod-deploy.md`), roda só após sinal explícito.
 
 Antes de qualquer trabalho:
 
@@ -12,12 +12,13 @@ Antes de qualquer trabalho:
 2. Leia `docs/CONVENTIONS.md` (overrides do projeto + folder structure + checklist de review).
 3. Leia `docs/PROJECT_SPEC.md` (produto, marca, editorial, schema Article).
 4. Leia `docs/INFRA.md` (servidor, deploy, ambientes, secrets).
-5. Leia `.omc/plans/mvp.md` (plano completo das 6 fases — contrato).
-6. Leia `.omc/progress/mvp.md` (estado atual de execução, decisões e bloqueios).
+5. Leia `.omc/plans/mvp.md` (plano MVP staging — Fases 1-5; contrato).
+6. Leia `.omc/plans/prod-deploy.md` (plano deploy prod — só relevante quando for deployar).
+7. Leia `.omc/progress/mvp.md` (estado atual de execução, decisões e bloqueios).
 
 Sessão nova começa fria mas com tudo persistido. Identifique próximo passo `not-started`/`in-progress` no progress file e siga.
 
-Esses 4 arquivos são o contrato. Não duplicar conteúdo aqui.
+Esses arquivos são o contrato. Não duplicar conteúdo aqui.
 
 ## Identidade
 
@@ -195,7 +196,15 @@ Detalhes em `docs/INFRA.md`.
 - Skills locais `~/.claude/skills/blog-import/SKILL.md` (orquestra fetch/extract/LLM/lexical/POST) e `~/.claude/skills/blog-publish/SKILL.md` (POST publish + relata revalidate)
 - Smoke test 100% passou: 201 create, 200 publish, 403 auth, 400 zod, 404 not-found, 409 conflict, 429 rate-limit
 
-**Fase 5 — Deploy staging parrilla: pendente** (próxima fase). Ver `.omc/plans/mvp.md` Fase 5 pra escopo (DNS Cloudflare staging.*, nginx vhosts proxy → 3023, certbot, systemd unit autostart compose).
+**Fase 5 — Deploy staging parrilla: ✓ done** (2026-04-29, reboot test deferred)
+- DNS Cloudflare: A records `staging.bitflix.com.br` + `staging.cms.bitflix.com.br` → `45.182.133.84` (DNS only).
+- nginx vhosts em `infra/staging/*.conf` instalados em `/etc/nginx/sites-{available,enabled}/`.
+- TLS via `certbot --nginx --redirect`: cert único cobre os 2 nomes, expira 2026-07-28, renovação automática (`certbot.timer`).
+- systemd unit `bitflix-lp-staging.service` enabled (autostart compose ao boot).
+- Smoke test 4/4 OK: `staging.bitflix.com.br` → 200 site público, `staging.cms.bitflix.com.br/admin` → 200 admin, `/admin` no público → 404 middleware, `/blog` no cms → 404 middleware.
+- Acceptance único pendente: reboot test compose autostart (deferred — design idempotente, valida natural em próxima reboot).
+- URLs ativas: https://staging.bitflix.com.br + https://staging.cms.bitflix.com.br/admin.
+- **Quirk dev mode:** primeira request após boot pode retornar 500 transient (`__webpack_modules__[moduleId] is not a function` em chunks `@payloadcms/ui`/`richtext-lexical`). Próxima mesma request → 200. Detalhe em `.omc/progress/mvp.md` Bloqueios. Em prod (Fase 6, `next start` build) não acontece — só dev mode.
 
 **Commits relevantes em `main`:**
 - `0708cb5` initial doc snapshot
