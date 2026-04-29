@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Em execução do MVP.** Fases 1 (bootstrap) e 2 (modeling) concluídas em 2026-04-29. Próxima fase: Fase 3 (public frontend).
+**Em execução do MVP.** Fases 1 (bootstrap), 2 (modeling) e 3 (public frontend) concluídas em 2026-04-29. Próxima fase: Fase 4 (translation workflow / skill `/blog-import`).
 
 Antes de qualquer trabalho:
 
@@ -170,7 +170,21 @@ Detalhes em `docs/INFRA.md`.
 - Migration snapshot `src/migrations/20260429_220628_initial.{ts,json}`
 - Seed idempotente em `scripts/seed-minimal.ts` (`pnpm seed`): Author Milton + 4 Products (meuml/postflix/marketflix/kronikor) + Globals com placeholders
 
-**Fase 3 — Public frontend: pendente** (próxima fase). Ver `.omc/plans/mvp.md` Fase 3 pra escopo (10 rotas, OG dinâmico, RSS, ViewModel layer, sitemap, Umami).
+**Fase 3 — Public frontend: ✓ done**
+- 10 rotas públicas + 4 internas (admin/api) — `pnpm build` OK 14/14 pages
+- shadcn/ui (preset Nova) inicializado: button + card + badge + separator + sheet
+- Componentes layout: `site-header.tsx` (sticky, sheet mobile), `site-footer.tsx`
+- ViewModels (`src/dto/`): `article.ts`, `product.ts`, `author.ts`, `site.ts` — UI consome só VMs
+- Services (`src/services/`): `articles`, `products`, `authors`, `categories`, `site` — wrappers Payload Local API
+- Páginas: home (hero+pillars+vitrine+blog+CTA), `/produtos`, `/servicos`, `/sobre`, `/contato`, `/blog` (listing+filtros+paginação), `/blog/[slug]` (Lexical render+source+disclaimer+slides link), `/blog/[slug]/slides` (reveal.js v5 client wrapper)
+- OG dinâmico `/og/[slug]` via `next/og` ImageResponse Node runtime, gradient teal + dot grid + Geist
+- RSS `/blog/feed.xml` (últimos 30, escape XML, cache 1h)
+- `sitemap.ts` + `robots.ts` (Next metadata helpers)
+- Umami component (só prod E websiteId definido)
+- WhatsApp button compartilhado (`buildWhatsAppUrl` helper)
+- Checklist project-specific review zero violações
+
+**Fase 4 — Translation workflow: pendente** (próxima fase). Ver `.omc/plans/mvp.md` Fase 4 pra escopo (skill `/blog-import`, endpoint `/api/blog-import`, Facade+Coordinator+UCs+repos, providers LLM e content-extractor).
 
 **Commits relevantes em `main`:**
 - `0708cb5` initial doc snapshot
@@ -178,6 +192,7 @@ Detalhes em `docs/INFRA.md`.
 - `5cb3f52` importMap sync
 - `8a277a9` progress update Fase 1 done
 - `35690bd` Fase 2 modeling (21 files)
+- (a commitar) Fase 3 public frontend
 
 ## Decisões já fechadas (não revisitar sem motivo)
 

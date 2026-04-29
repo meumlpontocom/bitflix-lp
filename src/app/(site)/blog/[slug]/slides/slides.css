@@ -1,0 +1,25 @@
+.bitflix-slides-host {
+  position: fixed;
+  inset: 0;
+  background: #fbf1e1;
+}
+
+.bitflix-slides-host .reveal {
+  --r-background-color: #fbf1e1;
+  --r-main-color: #2d2d2d;
+  --r-heading-color: #003030;
+  --r-link-color: #006070;
+  --r-link-color-hover: #008090;
+  --r-selection-color: #ffffff;
+  --r-selection-background-color: #008090;
+  --r-main-font: var(--font-geist-sans), system-ui, sans-serif;
+  --r-heading-font: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.bitflix-slides-host .reveal h1,
+.bitflix-slides-host .reveal h2,
+.bitflix-slides-host .reveal h3 {
+  text-transform: none;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}

@@ -8,9 +8,9 @@
 
 ## Status global
 
-**Fase atual:** Fase 3 — Public frontend (não iniciada)
-**Status overall:** `in-progress` (Fases 1+2 done em 2026-04-29)
-**Próxima ação:** começar pela seção 3.1 do plano (layout base + middleware hostname + shadcn init). Detalhe completo em `.omc/plans/mvp.md` Fase 3 (15 sub-tarefas: layout, home, /produtos, /servicos, /sobre, /contato, /blog listing, /blog/[slug], /blog/[slug]/slides, OG, RSS, error pages, ViewModel layer, sitemap, Umami).
+**Fase atual:** Fase 4 — Translation workflow (não iniciada)
+**Status overall:** `in-progress` (Fases 1+2+3 done em 2026-04-29)
+**Próxima ação:** começar Fase 4 (skill `/blog-import`): endpoint POST `/api/blog-import`, BlogImportFacade + Coordinator UC + UCs granulares + repos. Detalhe em `.omc/plans/mvp.md` Fase 4. Pode rodar paralelo a Fase 5 (deploy staging) já que ambas dependem de Fase 1+2.
 **Antes de começar:** ler CLAUDE.md seção "Toolchain quirks" (importante).
 
 | Status | Significado |
@@ -27,7 +27,7 @@
 |------|--------|--------|-----|
 | 1. Bootstrap | done | 2026-04-29 | 2026-04-29 |
 | 2. Modeling | done | 2026-04-29 | 2026-04-29 |
-| 3. Public frontend | not-started | — | — |
+| 3. Public frontend | done | 2026-04-29 | 2026-04-29 |
 | 4. Translation workflow | not-started | — | — |
 | 5. Deploy staging | not-started | — | — |
 | 6. Deploy produção | not-started | — | — |
@@ -167,7 +167,70 @@
 
 ## Fase 3 — Public frontend
 
-(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 3 para detalhes.)
+### 3.1 Layout base + middleware + shadcn
+- [x] shadcn init (preset Nova, base radix) — `done` (components.json criado, base color neutral, css vars on)
+- [x] Componentes shadcn instalados: button (preset), card, badge, separator, sheet — `done`
+- [x] Header `src/components/layout/site-header.tsx` (sticky, mobile sheet) — `done`
+- [x] Footer `src/components/layout/site-footer.tsx` — `done`
+- [x] Layout `(site)/layout.tsx` (header+main+footer+Umami) — `done`
+- [x] Middleware hostname routing — `done` (já estava da Fase 1)
+
+### 3.2 Home /
+- [x] Hero bege creme + dot grid + manifesto Lexical + CTAs — `done`
+- [x] Seção "IA chegando ao cliente final" 3 pillars — `done`
+- [x] Vitrine 4 produtos (lê Products) — `done`
+- [x] Trilho custom resumido — `done`
+- [x] Últimos 4 posts blog — `done`
+- [x] CTA WhatsApp final — `done`
+
+### 3.3-3.6 /produtos, /servicos, /sobre, /contato — `done`
+
+### 3.7 /blog listing
+- [x] Listing 9/página, filtros ?cat ?tag ?q — `done`
+- [x] CategoryFilter + Pagination components — `done`
+
+### 3.8 /blog/[slug]
+- [x] Body Lexical via `@payloadcms/richtext-lexical/react` — `done`
+- [x] Hero cover + título + meta — `done`
+- [x] ArticleSource + Disclaimer (variants) — `done`
+- [x] [Bitflix Take] + link slides — `done`
+- [x] generateStaticParams para artigos publicados — `done`
+
+### 3.9 /blog/[slug]/slides
+- [x] reveal.js v5 client wrapper (`SlideDeck`) — `done` (`reveal.js@5.2.1` instalado)
+- [x] CSS custom paleta Bitflix — `done`
+
+### 3.10 OG /og/[slug]
+- [x] `next/og` ImageResponse 1200x630 (Node runtime) — `done`
+- [x] Cache `public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400` — `done`
+
+### 3.11 RSS /blog/feed.xml
+- [x] XML 2.0, últimos 30 articles, escape XML, cache 1h — `done`
+
+### 3.12 Páginas erro
+- [x] Já estavam ok da Fase 1 (force-dynamic mantido) — `done`
+
+### 3.13 ViewModel layer
+- [x] `src/dto/article.ts`, `product.ts`, `author.ts`, `site.ts` — `done`
+
+### 3.14 Sitemap + robots
+- [x] `src/app/sitemap.ts` + `src/app/robots.ts` — `done`
+
+### 3.15 Umami
+- [x] `src/components/analytics/umami.tsx` (apenas em prod E websiteId definido) — `done`
+
+### Acceptance criteria Fase 3
+- [x] Todas 14 routes do build geradas — `done` (build output 14 rotas)
+- [x] `pnpm tsc --noEmit` zero erros — `done`
+- [x] `pnpm lint` zero warnings — `done`
+- [x] `pnpm build` passa — `done` (14/14 static pages, middleware 34kB)
+- [x] Smoke test rotas (curl) — `done` (home, /produtos, /servicos, /sobre, /contato, /blog, /blog/feed.xml, /sitemap.xml, /robots.txt, /og/test todos HTTP 200)
+- [x] Checklist project-specific review — `done` (12 greps zero-violation)
+- [ ] Lighthouse mobile ≥ 90 — `pending` (avaliar após primeiro artigo real publicado)
+- [ ] RSS validator W3C — `pending` (validar após primeiro artigo real)
+- [ ] Slides reveal.js navegáveis — `pending` (validar com artigo `has_slides=true`)
+- [ ] OG <500ms — `pending` (medir em prod)
+- [ ] Commit + push — pending
 
 ---
 
@@ -229,6 +292,26 @@
 - **Decisão:** manter `lexicalEditor()` sem customizar features.
 - **Motivo:** defaults Payload v3 já incluem heading H1-H4, blockquote, code block, link, listas, indent, align, relationship, upload, HR, inline+fixed toolbars. Cobre 100% do que o blog precisa.
 - **Acompanhamento:** customizar só se aparecer requisito específico (ex: bloco de citação destacada com layout próprio).
+
+### 2026-04-29 — Fase 3.1: shadcn preset Nova (Geist + Lucide)
+- **Decisão:** rodar `shadcn init` com `-p nova -b radix -t next` (preset Nova: Geist sans + Lucide icons).
+- **Motivo:** preset Nova alinha com o lock de Geist do projeto e Lucide é o `iconLibrary` default do shadcn.
+- **Trade-off:** init substituiu `globals.css` adicionando blocos de tokens shadcn (`@theme inline { --font-sans: var(--font-sans); ... }`). Manualmente reapontei `--font-sans` e `--font-heading` para `var(--font-geist-sans)` (variável já injetada em `layout.tsx` via `next/font/google`).
+- **How to apply:** ao adicionar componentes shadcn (`pnpm dlx shadcn@latest add X`), checar se globals.css ganha entradas duplicadas — corrigir se sim.
+
+### 2026-04-29 — Fase 3.10: OG via `next/og` no Node runtime
+- **Decisão:** `runtime = 'nodejs'` na route `/og/[slug]/route.tsx` (não Edge).
+- **Motivo:** rota busca artigo via Payload Local API → `pg` driver → Node-only. ImageResponse funciona em Node runtime no Next 15.
+- **Trade-off:** Edge runtime daria latência menor mas exigiria fetch HTTP a um endpoint público da API Payload (over-engineering pro MVP).
+
+### 2026-04-29 — Fase 3.13: ViewModels com type narrow para relations Payload
+- **Decisão:** VMs (`ArticleListItemVM`, `ArticleDetailVM`, `ProductVM`, `AuthorVM`, `SiteSettingsVM`, `NavigationVM`) com narrowing `isObject<T>` antes de extrair fields de `relationship`.
+- **Motivo:** Payload retorna relations como `number | T` dependendo de `depth`. UI nunca pode receber `number` cru — VM faz fallback (ex: `authorToVM` quando relation veio só como id, retorna placeholder Milton).
+- **How to apply:** todas Server Components consomem services (`*.service.ts`) que retornam VMs, nunca entities Payload diretas.
+
+### 2026-04-29 — Fase 3: cover image fallback usa `/og/[slug]` route
+- **Decisão:** quando `cover_image_override` e `cover_image` ambos vazios, VM gera `coverUrl = /og/[slug]` (rota OG dinâmica).
+- **Motivo:** spec do projeto (PROJECT_SPEC.md seção 6) define OG dinâmico como cover default. Listing e article page usam `Image` com `unoptimized={coverUrl.startsWith('/og/')}` pra evitar re-otimizar PNG já gerado.
 
 ---
 
