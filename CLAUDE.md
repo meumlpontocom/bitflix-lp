@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Greenfield**. Repo contém apenas documentação por ora. Nenhuma linha de código foi escrita. Toda a stack, decisões de produto, identidade, infra e convenções já estão fechadas e documentadas em `docs/`.
+**Em execução do MVP.** Fases 1 (bootstrap) e 2 (modeling) concluídas em 2026-04-29. Próxima fase: Fase 3 (public frontend).
 
 Antes de qualquer trabalho:
 
@@ -12,6 +12,10 @@ Antes de qualquer trabalho:
 2. Leia `docs/CONVENTIONS.md` (overrides do projeto + folder structure + checklist de review).
 3. Leia `docs/PROJECT_SPEC.md` (produto, marca, editorial, schema Article).
 4. Leia `docs/INFRA.md` (servidor, deploy, ambientes, secrets).
+5. Leia `.omc/plans/mvp.md` (plano completo das 6 fases — contrato).
+6. Leia `.omc/progress/mvp.md` (estado atual de execução, decisões e bloqueios).
+
+Sessão nova começa fria mas com tudo persistido. Identifique próximo passo `not-started`/`in-progress` no progress file e siga.
 
 Esses 4 arquivos são o contrato. Não duplicar conteúdo aqui.
 
@@ -74,12 +78,25 @@ Pontos cruciais (vão pegar agente novo de surpresa):
 
 Folder structure completa em `docs/CONVENTIONS.md` seção "Folder Structure".
 
-## Comandos comuns (futuro)
+## Toolchain quirks aprendidos durante execução
 
-Como o projeto é greenfield, esta seção descreve o que estará disponível após Fase 1 (bootstrap):
+Estes pontos saíram da execução real e são CRÍTICOS pra próxima sessão não tropeçar:
+
+- **`"type": "module"`** está ativo no `package.json`. Necessário pra `payload generate:types` e `payload run` funcionarem (Node 24 + ESM strict). NÃO remover.
+- **`payload.config.ts` e `src/collections/*.ts` usam imports relativos com extensão `.ts` explícita**, NÃO o alias `@/`. O CLI Payload usa `tsx` interno que não lê `paths` do `tsconfig.json`. `tsconfig.json` tem `allowImportingTsExtensions: true` pra TS aceitar.
+- **Alias `@/` continua válido em**: `src/app/**` (Next runtime), `src/lib/**`, `src/components/**`, `src/hooks/**`, `src/services/**`, `src/dto/**`, qualquer coisa consumida via Next/Webpack/Turbopack. Só evitar em arquivos consumidos pelo `payload` CLI.
+- **Migrations auto-push em dev**. Payload v3 + Postgres com `push: true` (default em dev) sincroniza schema sem precisar `migrate`. Comando `payload migrate:create` gera apenas snapshots versionados (úteis pra prod). Em prod, vai precisar trocar pra `push: false` e rodar migrations manualmente.
+- **Seed**: `pnpm seed` (executa `scripts/seed-minimal.ts` via `payload run`). Idempotente — checa `find` antes de `create`. Re-rodar é seguro.
+- **`error.tsx`, `not-found.tsx`, `global-error.tsx`** todos têm `export const dynamic = 'force-dynamic'`. Mantém blindagem caso Next 15 minor reintroduza a regressão de prerender que fez Next 16 ser inviável. NÃO remover sem testar build.
+- **Next 15.5.15 é o lock atual**. Next 16 quebra (ver Decisões em `.omc/progress/mvp.md`). Subir pra 16.x só quando 16.3+ confirmar fix oficial.
+- **Geist via `next/font/google`** (não pelo package `geist`). Package `geist 1.7.0` está instalado mas não usado — pode remover na Fase 3 se confirmar obsoleto.
+- **`importMap.js` em `src/app/(payload)/admin/`** é gerado por Payload. Commitar a versão regenerada quando rodar `pnpm dev` ou `payload generate:importmap` (Payload pode regenerar e deixar diff sujo se ignorar).
+- **TypeScript 5.9.3 fixo**. NÃO subir pra 6.x ainda — ecossistema Payload/Drizzle/plugins não validados.
+
+## Comandos comuns
 
 ```bash
-# Dev server (single docker-compose com Postgres + MinIO + app Next dev)
+# Dev server (Postgres + MinIO + app Next dev em compose)
 docker compose up -d
 docker compose logs -f bitflix-lp-app
 
@@ -98,15 +115,16 @@ pnpm tsc --noEmit
 # Lint
 pnpm lint
 
-# Test (vitest, quando configurado)
+# Test (vitest, quando configurado — Fase 3+)
 pnpm test
 pnpm test path/to/file.test.ts            # arquivo único
 pnpm test -- --run -t "nome do teste"     # filtro por nome
 
-# Payload migrations
-pnpm payload migrate              # rodar pendentes
-pnpm payload migrate:create       # criar nova
-pnpm payload generate:types       # regenerar tipos a partir das Collections
+# Payload (sempre rodar dentro do container ou via host com .env carregado)
+docker compose exec bitflix-lp-app pnpm payload migrate              # aplica pendentes
+docker compose exec bitflix-lp-app pnpm payload migrate:create       # cria snapshot
+docker compose exec bitflix-lp-app pnpm payload:types                # regenera src/payload-types.ts
+docker compose exec bitflix-lp-app pnpm seed                         # roda seed idempotente
 
 # Drizzle studio (debug DB direto)
 pnpm drizzle-kit studio
@@ -133,6 +151,33 @@ Detalhes em `docs/INFRA.md`.
 - Sempre responder em **Português Brasil** (alinhado a `~/.claude/CLAUDE.md` global).
 - Mensagens curtas. Sem floreio.
 - Formatação BR para todos os dados monetários (`R$ 1.230,50`), datas (`DD/MM/YYYY`), horários (`HH:MM`). Helper centralizado em `src/lib/formatters.ts`.
+
+## Estado atual do MVP (snapshot 2026-04-29)
+
+**Fase 1 — Bootstrap: ✓ done**
+- Repo `meumlpontocom/bitflix-lp` criado, branch `main`
+- Stack instalada e travada: Next 15.5.15, React 19.2.5, TS 5.9.3, Payload 3.84.1, Postgres 17, MinIO, Tailwind 4.2.4
+- Docker compose 4 services rodando (postgres, minio, mc-init, app dev)
+- Admin Payload acessível em `localhost:3023/admin`, primeiro user (Milton, id=1) criado
+- Bucket MinIO `bitflix-lp-staging-media` provisionado
+- `pnpm build`/`tsc`/`lint` zero erros
+
+**Fase 2 — Modeling: ✓ done**
+- 8 Collections: Users, Authors, Articles, Categories, Tags, Products, Media, ArticleImportsLog (append-only)
+- 2 Globals: SiteSettings (manifesto, whatsapp, umami, migration_strategy), Navigation (main_menu, footer_links)
+- 21 tabelas no Postgres (auto-push em dev)
+- `src/payload-types.ts` gerado (20.8 KB)
+- Migration snapshot `src/migrations/20260429_220628_initial.{ts,json}`
+- Seed idempotente em `scripts/seed-minimal.ts` (`pnpm seed`): Author Milton + 4 Products (meuml/postflix/marketflix/kronikor) + Globals com placeholders
+
+**Fase 3 — Public frontend: pendente** (próxima fase). Ver `.omc/plans/mvp.md` Fase 3 pra escopo (10 rotas, OG dinâmico, RSS, ViewModel layer, sitemap, Umami).
+
+**Commits relevantes em `main`:**
+- `0708cb5` initial doc snapshot
+- `33cccf5` Fase 1 bootstrap (53 files)
+- `5cb3f52` importMap sync
+- `8a277a9` progress update Fase 1 done
+- `35690bd` Fase 2 modeling (21 files)
 
 ## Decisões já fechadas (não revisitar sem motivo)
 

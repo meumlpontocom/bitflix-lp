@@ -8,9 +8,10 @@
 
 ## Status global
 
-**Fase atual:** Fase 3 — Public frontend (após Fase 2 done em 2026-04-29)
-**Status overall:** `in-progress`
-**Próxima ação:** layout base + home + páginas /produtos /servicos /sobre /contato /blog + OG images + RSS. Decisão sobre prosseguir agora ou parar pra revisão pendente do user.
+**Fase atual:** Fase 3 — Public frontend (não iniciada)
+**Status overall:** `in-progress` (Fases 1+2 done em 2026-04-29)
+**Próxima ação:** começar pela seção 3.1 do plano (layout base + middleware hostname + shadcn init). Detalhe completo em `.omc/plans/mvp.md` Fase 3 (15 sub-tarefas: layout, home, /produtos, /servicos, /sobre, /contato, /blog listing, /blog/[slug], /blog/[slug]/slides, OG, RSS, error pages, ViewModel layer, sitemap, Umami).
+**Antes de começar:** ler CLAUDE.md seção "Toolchain quirks" (importante).
 
 | Status | Significado |
 |--------|-------------|
@@ -233,13 +234,10 @@
 
 ## Bloqueios e descobertas
 
-### 2026-04-29 — gh auth: conta autenticada é `miltonbastos`, não `meumlpontocom`
+### 2026-04-29 — gh auth: conta autenticada era `miltonbastos`, não `meumlpontocom` — RESOLVIDO
 - **Sintoma:** `gh repo create meumlpontocom/bitflix-lp` falhou com `GraphQL: miltonbastos cannot create a repository for meumlpontocom`.
-- **Diagnóstico:** `gh auth status` mostra label `meumlpontocom (keyring)` mas `gh api user` retorna `miltonbastos`. Token GitHub pertence à conta `miltonbastos` (alinha com email `miltonbastos@gmail.com`). User confirmou: `meumlpontocom` é conta SEPARADA.
-- **Workaround tentado:** `gh auth login` interativo; `snap-confine is packaged without necessary permissions and cannot continue` impediu abertura do browser pelo gh CLI.
-- **Resolução pendente:** usuário precisa autenticar via:
-  1. Abrir manualmente `https://github.com/login/device` em browser que funcione e colar o código exibido pelo gh
-  2. OU gerar PAT em `https://github.com/settings/tokens` (escopos: `repo`, `workflow`, `read:org`) e rodar `gh auth login --with-token <<< "ghp_..."`
+- **Diagnóstico:** `gh auth status` mostrava label `meumlpontocom (keyring)` mas `gh api user` retornava `miltonbastos`. Token pertencia à conta `miltonbastos`.
+- **Resolução:** user re-logou manualmente na conta `meumlpontocom`. Após re-login, `gh api user` retornou `meumlpontocom` e `gh repo create` funcionou. Repo criado em https://github.com/meumlpontocom/bitflix-lp.
 
 ### 2026-04-29 — Volume Docker `node_modules` em uso após restart loop
 - **Sintoma:** `docker volume rm` falhou com "volume is in use" mesmo após `docker compose stop`.
@@ -266,18 +264,34 @@
 
 - [x] **Autenticar `gh` na conta `meumlpontocom`** — `done` 2026-04-29
 - [x] **Criar repo + push** — `done` (https://github.com/meumlpontocom/bitflix-lp)
-- [ ] **Criar primeiro user no admin Payload** acessando `http://localhost:3023/admin` no browser e preenchendo o form `create-first-user` — Fase 1
-- [ ] Preencher manifesto/bio/whatsapp/email no Payload Globals — Fase 6 prereq
+- [x] **Criar primeiro user no admin Payload** — `done` 2026-04-29 (Milton Bastos, id=1)
+- [ ] Preencher manifesto/bio/whatsapp/email no Payload Globals (`http://localhost:3023/admin/globals/site-settings`) — Fase 6 prereq
 - [ ] Criar website Umami para `bitflix.com.br` em `stats.bitflix.com.br/dashboard` — Fase 6 prereq
 - [ ] Decidir estratégia cutover DNS apex — Fase 6 prereq
 - [ ] Sinal explícito pra iniciar Fase 6 — Fase 6
 
 ---
 
+## Histórico de commits relevantes
+
+| Commit | Descrição |
+|--------|-----------|
+| `0708cb5` | docs initial snapshot |
+| `33cccf5` | Fase 1 bootstrap (53 files, 9831 lines) |
+| `5cb3f52` | importMap sync após primeiro boot Payload |
+| `8a277a9` | progress update Fase 1 done |
+| `35690bd` | Fase 2 modeling (21 files, 5090 lines) |
+
+Repo: https://github.com/meumlpontocom/bitflix-lp (privado).
+
+---
+
 ## Como retomar em sessão futura
 
-1. Ler `CLAUDE.md` + 3 docs em `docs/`
-2. Ler `.omc/plans/mvp.md` (plano contrato)
-3. Ler este arquivo (estado atual)
-4. Identificar próximo passo `not-started` ou `in-progress`
-5. Executar, atualizar este arquivo (status + timestamp na seção "Decisões"/"Bloqueios" se aplicável), commit, push
+1. Ler `CLAUDE.md` (contém estado atual + toolchain quirks).
+2. Ler `docs/CONVENTIONS.md` (overrides + quirks toolchain consolidados).
+3. Ler `.omc/plans/mvp.md` (plano contrato das 6 fases).
+4. Ler este arquivo (estado atual + decisões + bloqueios).
+5. Identificar próximo passo `not-started` ou `in-progress`.
+6. Verificar se containers estão up: `docker compose ps`. Se não: `docker compose up -d`.
+7. Executar, atualizar este arquivo (status + timestamp + decisões/bloqueios), commit, push.

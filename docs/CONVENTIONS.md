@@ -34,6 +34,28 @@
 
 ---
 
+## Toolchain quirks (aprendidos durante execução, 2026-04-29)
+
+Cada item afeta como/onde escrever código no projeto. Não revisitar sem ler `.omc/progress/mvp.md` Decisões.
+
+- **`"type": "module"`** ativo no `package.json`. Necessário pra `payload generate:types` e `payload run` em Node 24 (ESM strict, sem `require()` de ESM com top-level await).
+- **Em `src/payload.config.ts` e `src/collections/*.ts`: imports relativos com extensão `.ts` explícita**. `tsx` interno do Payload CLI não lê `tsconfig.json paths`. Exemplo:
+  ```ts
+  // bom (em payload.config.ts/collections):
+  import { Articles } from './collections/Articles.ts'
+  import { slugify } from '../lib/slugify.ts'
+  // ruim:
+  import { Articles } from '@/collections/Articles'   // CLI quebra
+  ```
+- **Em `src/app/**`, `src/lib/**`, `src/components/**`, `src/hooks/**`, `src/services/**`, `src/dto/**`: alias `@/` continua válido**. Esses arquivos rodam via Next runtime (Webpack/Turbopack) que resolve `paths`.
+- **`tsconfig.json` tem `allowImportingTsExtensions: true`** pra TS aceitar os imports `.ts` explícitos sem reclamar.
+- **Migrations auto-push em dev**. Payload v3 + Postgres com `push: true` (default) sincroniza schema toda vez que `payload.config.ts` muda. Em prod (Fase 6), trocar pra `push: false` e rodar migrations versionadas.
+- **Páginas `error.tsx`, `not-found.tsx`, `global-error.tsx`** todas têm `export const dynamic = 'force-dynamic'`. Mantém blindagem se Next 15 reintroduzir a regressão de prerender que fez Next 16 ser inviável (`useContext null` em `_global-error`/`_not-found`). Não remover sem testar build.
+- **Geist via `next/font/google`** (não pelo package `geist`). Package `geist 1.7.0` instalado mas não em uso — pode remover quando confirmar.
+- **`importMap.js` em `src/app/(payload)/admin/`** é regenerado por Payload em dev/build. Sempre committar a versão final pra evitar diff sujo. Lint já ignora.
+
+---
+
 ## Domain Entities
 
 - `Article`: post do blog (importado/adaptado de EN ou compilado de texto PT-BR). Tem corpo Lexical, slides opcionais, source de origem citada, disclaimer IA.
