@@ -8,9 +8,9 @@
 
 ## Status global
 
-**Fase atual:** Fase 1 — Bootstrap (95% — falta criar primeiro user no admin via browser e push pro GitHub após auth meumlpontocom)
+**Fase atual:** Fase 1 — Bootstrap (98% — falta apenas criar primeiro user no admin Payload via browser)
 **Status overall:** `in-progress`
-**Próxima ação:** usuário criar primeiro user no admin Payload (`http://localhost:3023/admin`) + autenticar gh CLI na conta `meumlpontocom` para push do código.
+**Próxima ação:** usuário acessa `http://localhost:3023/admin` em browser e cria primeiro user. Depois Fase 2 (modeling).
 
 | Status | Significado |
 |--------|-------------|
@@ -39,15 +39,15 @@
 - [x] Node 24.15.0 confirmado — `done` (2026-04-29)
 - [x] pnpm 10.33.2 confirmado — `done` (corepack ativou; pnpm host estava 10.32.0, atualizado via `corepack prepare pnpm@10.33.2 --activate`)
 - [x] Docker + Compose v2 confirmados — `done` (Docker 29.1.3, Compose 2.40.3)
-- [x] `gh` autenticado em `meumlpontocom` — `blocked` — token autenticado é `miltonbastos` (conta separada de `meumlpontocom`); ver bloqueio no fim
+- [x] `gh` autenticado em `meumlpontocom` — `done` (após user re-logar manualmente; `gh api user` agora retorna `meumlpontocom`)
 - [x] User no grupo `docker` — `done`
 
 ### 1.1 Git + GitHub
 - [x] `git init` — `done` (branch `main`)
 - [x] `.gitignore` criado — `done`
-- [ ] Repo `meumlpontocom/bitflix-lp` privado criado via `gh` — `blocked` (auth conta certa pendente)
+- [x] Repo `meumlpontocom/bitflix-lp` privado criado — `done` (https://github.com/meumlpontocom/bitflix-lp)
 - [x] Commit inicial snapshot docs — `done` (commit `0708cb5`)
-- [ ] Push `main` — `blocked`
+- [x] Push `main` — `done` (3 commits: `0708cb5` docs + `33cccf5` Fase 1 bootstrap + `5cb3f52` importMap sync)
 
 ### 1.2 Scaffold Next
 - [x] Backup temporário de docs — `done` (scaffold em `/tmp/bitflix-lp-scaffold`, copiado via rsync excluindo `.git/CLAUDE.md/AGENTS.md/.gitignore/README.md`)
@@ -113,7 +113,7 @@
 - [x] `pnpm build` passa — `done` (Next 15.5.15, 6 routes geradas)
 - [x] `pnpm tsc --noEmit` zero erros — `done`
 - [x] `pnpm lint` zero warnings críticos — `done`
-- [ ] Commit + push final em `main` — `blocked` (auth gh)
+- [x] Commit + push final em `main` — `done` (push completo apos auth meumlpontocom resolvida)
 
 ---
 
@@ -247,8 +247,8 @@
 
 > Lista cumulativa de ações que SÓ o usuário pode fazer.
 
-- [ ] **Autenticar `gh` na conta `meumlpontocom`** (via `gh auth login --with-token` ou abrindo manualmente https://github.com/login/device) — Fase 1
-- [ ] **Criar repo + push** após auth: `gh repo create meumlpontocom/bitflix-lp --private --source=. --remote=origin --push` — Fase 1
+- [x] **Autenticar `gh` na conta `meumlpontocom`** — `done` 2026-04-29
+- [x] **Criar repo + push** — `done` (https://github.com/meumlpontocom/bitflix-lp)
 - [ ] **Criar primeiro user no admin Payload** acessando `http://localhost:3023/admin` no browser e preenchendo o form `create-first-user` — Fase 1
 - [ ] Preencher manifesto/bio/whatsapp/email no Payload Globals — Fase 6 prereq
 - [ ] Criar website Umami para `bitflix.com.br` em `stats.bitflix.com.br/dashboard` — Fase 6 prereq
