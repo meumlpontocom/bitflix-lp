@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Em execução do MVP.** Fases 1 (bootstrap), 2 (modeling) e 3 (public frontend) concluídas em 2026-04-29. Próxima fase: Fase 4 (translation workflow / skill `/blog-import`).
+**Em execução do MVP.** Fases 1 (bootstrap), 2 (modeling), 3 (public frontend) e 4 (translation workflow) concluídas em 2026-04-29. Próxima fase: Fase 5 (deploy staging parrilla).
 
 Antes de qualquer trabalho:
 
@@ -184,7 +184,18 @@ Detalhes em `docs/INFRA.md`.
 - WhatsApp button compartilhado (`buildWhatsAppUrl` helper)
 - Checklist project-specific review zero violações
 
-**Fase 4 — Translation workflow: pendente** (próxima fase). Ver `.omc/plans/mvp.md` Fase 4 pra escopo (skill `/blog-import`, endpoint `/api/blog-import`, Facade+Coordinator+UCs+repos, providers LLM e content-extractor).
+**Fase 4 — Translation workflow: ✓ done**
+- Endpoints `/api/blog-import` (POST cria draft) e `/api/blog-publish` (POST promove draft → published + revalidatePath blog/feed/sitemap), auth `Authorization: Bearer $BLOG_IMPORT_TOKEN` (constant-time + fingerprint salvo no log)
+- Camadas estritas: route → Facade (parseOrThrow + AppError) → Coordinator UC → UCs granulares → Repositories Payload-based
+- Rate limit 10/min/IP in-memory na rota import
+- Repos: articles, authors, categories, tags, article-imports-log (Payload v3 Local API; sem Drizzle direto)
+- UCs granulares thin: ensure-category, ensure-tag, create-article, create-import-log, publish-article. Coordinator `create-article-from-import` orquestra (sem tx no MVP — ver Decisões)
+- Container Awilix CLASSIC: repos singleton, UCs/Facades transient
+- Validators Zod centralizados em `src/lib/validators/{parseOrThrow,blog-import}.ts`
+- Skills locais `~/.claude/skills/blog-import/SKILL.md` (orquestra fetch/extract/LLM/lexical/POST) e `~/.claude/skills/blog-publish/SKILL.md` (POST publish + relata revalidate)
+- Smoke test 100% passou: 201 create, 200 publish, 403 auth, 400 zod, 404 not-found, 409 conflict, 429 rate-limit
+
+**Fase 5 — Deploy staging parrilla: pendente** (próxima fase). Ver `.omc/plans/mvp.md` Fase 5 pra escopo (DNS Cloudflare staging.*, nginx vhosts proxy → 3023, certbot, systemd unit autostart compose).
 
 **Commits relevantes em `main`:**
 - `0708cb5` initial doc snapshot
@@ -192,7 +203,8 @@ Detalhes em `docs/INFRA.md`.
 - `5cb3f52` importMap sync
 - `8a277a9` progress update Fase 1 done
 - `35690bd` Fase 2 modeling (21 files)
-- (a commitar) Fase 3 public frontend
+- `736ab56` Fase 3 public frontend (54 files, +7206 −468)
+- (a commitar) Fase 4 translation workflow
 
 ## Decisões já fechadas (não revisitar sem motivo)
 

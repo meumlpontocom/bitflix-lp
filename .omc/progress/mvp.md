@@ -8,9 +8,9 @@
 
 ## Status global
 
-**Fase atual:** Fase 4 — Translation workflow (não iniciada)
-**Status overall:** `in-progress` (Fases 1+2+3 done em 2026-04-29)
-**Próxima ação:** começar Fase 4 (skill `/blog-import`): endpoint POST `/api/blog-import`, BlogImportFacade + Coordinator UC + UCs granulares + repos. Detalhe em `.omc/plans/mvp.md` Fase 4. Pode rodar paralelo a Fase 5 (deploy staging) já que ambas dependem de Fase 1+2.
+**Fase atual:** Fase 5 — Deploy staging parrilla (não iniciada)
+**Status overall:** `in-progress` (Fases 1+2+3+4 done em 2026-04-29)
+**Próxima ação:** Fase 5 (DNS Cloudflare + nginx vhosts + certbot + systemd autostart compose). Pré-req: Fase 1 done. Detalhe em `.omc/plans/mvp.md` Fase 5. Fase 6 (prod tomahawk) só com sinal explícito do usuário.
 **Antes de começar:** ler CLAUDE.md seção "Toolchain quirks" (importante).
 
 | Status | Significado |
@@ -28,7 +28,7 @@
 | 1. Bootstrap | done | 2026-04-29 | 2026-04-29 |
 | 2. Modeling | done | 2026-04-29 | 2026-04-29 |
 | 3. Public frontend | done | 2026-04-29 | 2026-04-29 |
-| 4. Translation workflow | not-started | — | — |
+| 4. Translation workflow | done | 2026-04-29 | 2026-04-29 |
 | 5. Deploy staging | not-started | — | — |
 | 6. Deploy produção | not-started | — | — |
 
@@ -236,7 +236,47 @@
 
 ## Fase 4 — Translation workflow
 
-(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 4 para detalhes.)
+### 4.1 Endpoint POST `/api/blog-import`
+- [x] `src/lib/validators/blog-import.ts` — Zod schema completo (title, slug, body_lexical, source, categories[], tags[], slides_blocks[], language_origin, disclaimer_variant, etc) — `done`
+- [x] `src/lib/validators/parseOrThrow.ts` helper — `done`
+- [x] `src/lib/auth/blog-import-token.ts` — verifica `Authorization: Bearer <BLOG_IMPORT_TOKEN>` (constant-time comparison + fingerprint) — `done`
+- [x] Repositories Payload-based: `articles`, `authors`, `categories`, `tags`, `article-imports-log` — `done`
+- [x] Use cases granulares: `EnsureCategoryUseCase`, `EnsureTagUseCase`, `CreateArticleUseCase`, `CreateImportLogUseCase`, `PublishArticleUseCase` — `done`
+- [x] Coordinator UC: `CreateArticleFromImportCoordinatorUseCase` — orquestra ensure+create+log — `done`
+- [x] Facades: `BlogImportFacade`, `PublishArticleFacade` (lança AppError, parseOrThrow no input) — `done`
+- [x] Container Awilix CLASSIC com lifetimes corretos (repos singleton, UCs/facades transient) — `done`
+- [x] Route handler `src/app/api/blog-import/route.ts` (thin, runtime nodejs, rate limit 10/min/IP in-memory) — `done`
+- [x] Resposta `{article_id, slug, admin_url, status: 'draft'}` — `done`
+
+### 4.2 Pipeline interno
+- Skill local roda passos 1-5 (fetch+extract+LLM+md→lexical+sugestao taxonomia) e POSTa payload pronto. Server faz upsert categorias/tags por slug e cria Article+ImportLog.
+
+### 4.3 Skill `/blog-import`
+- [x] `~/.claude/skills/blog-import/SKILL.md` — `done` (orquestra pipeline; instrui voz Bitflix; template Lexical; schema Zod completo; troubleshooting de status codes)
+
+### 4.4 Comando `/blog-publish <slug>`
+- [x] Endpoint extra `src/app/api/blog-publish/route.ts` (mesmo token Bearer) — `done`
+- [x] `PublishArticleFacade` chama `revalidatePath('/blog')`, `/blog/[slug]`, `/blog/feed.xml`, `/sitemap.xml` — `done`
+- [x] `~/.claude/skills/blog-publish/SKILL.md` — `done`
+
+### 4.5 Tabela `article_imports_log`
+- [x] Já modelada (Fase 2). Cada chamada bem-sucedida grava entrada (article_id, source_url, import_method, triggered_by=fingerprint, llm_summary). — `done`
+
+### Acceptance criteria Fase 4
+- [x] POST `/api/blog-import` aceita payload válido, retorna article_id+slug+admin_url — `done` (smoke test 201, fingerprint salvo no log)
+- [x] Token inválido retorna 403 — `done`
+- [x] Body inválido retorna 400 com mensagem ValidationError detalhada — `done` (Zod path+message)
+- [x] Slug duplicado retorna 409 — `done`
+- [x] Rate limit 10/min retorna 429 — `done`
+- [x] POST `/api/blog-publish` aceita slug, muda status, revalida paths — `done` (smoke test 200, conflict 409, not-found 404, validation 400)
+- [x] `article_imports_log` tem entrada por chamada — `done`
+- [x] `pnpm tsc --noEmit` zero erros — `done`
+- [x] `pnpm lint` zero warnings — `done`
+- [x] `pnpm build` passa — `done` (16 rotas, +`/api/blog-import` +`/api/blog-publish`)
+- [x] Checklist project-specific zero violações — `done`
+- [ ] Smoke real com URL EN → article_id em <30s — `pending` (validar quando rodar com LLM real)
+- [ ] Slides geram 8-12 blocks — `pending` (validar quando user testar com flag --slides)
+- [ ] Commit + push — pending
 
 ---
 
@@ -312,6 +352,27 @@
 ### 2026-04-29 — Fase 3: cover image fallback usa `/og/[slug]` route
 - **Decisão:** quando `cover_image_override` e `cover_image` ambos vazios, VM gera `coverUrl = /og/[slug]` (rota OG dinâmica).
 - **Motivo:** spec do projeto (PROJECT_SPEC.md seção 6) define OG dinâmico como cover default. Listing e article page usam `Image` com `unoptimized={coverUrl.startsWith('/og/')}` pra evitar re-otimizar PNG já gerado.
+
+### 2026-04-29 — Fase 4: auth header `Authorization: Bearer` (não `X-Bitflix-Import-Token`)
+- **Decisão:** endpoint `/api/blog-import` e `/api/blog-publish` usam `Authorization: Bearer <BLOG_IMPORT_TOKEN>`.
+- **Motivo:** plan `.omc/plans/mvp.md` Fase 4.1 especifica Bearer. CONVENTIONS.md tinha `X-Bitflix-Import-Token` por engano — atualizar quando convier.
+- **How to apply:** skills `blog-import`/`blog-publish` enviam header `Authorization: Bearer $BLOG_IMPORT_TOKEN`. Comparison é constant-time pra evitar timing attacks. Fingerprint (8 primeiros chars) é salvo em `article_imports_log.triggered_by`.
+
+### 2026-04-29 — Fase 4: sem transação cross-collection no MVP
+- **Decisão:** Coordinator UC NÃO abre `payload.db.beginTransaction`. Operações `ensureCategory` → `ensureTag` → `createArticle` → `createImportLog` rodam sequencialmente, cada uma atômica per-call.
+- **Motivo:** Payload v3 expõe `beginTransaction(req)` mas requer propagar `req` com `transactionID` em todas as chamadas — adiciona ruído estrutural por baixíssimo benefício no volume MVP (poucos imports/dia).
+- **Risco aceito:** se `createImportLog` falhar após `createArticle` OK, fica artigo órfão sem log de auditoria. Volume baixo + log é só auditoria → tolerável.
+- **How to apply:** quando volume justificar, adicionar `req.transactionID` propagation nos repositories e usar pattern oficial Payload (begin → ops → commit/rollback).
+
+### 2026-04-29 — Fase 4: Awilix CLASSIC mode + parâmetros nomeados
+- **Decisão:** container CLASSIC (`InjectionMode.CLASSIC`); construtores recebem deps por nome de parâmetro (não objeto deps).
+- **Motivo:** STANDARDS Bitflix exige CLASSIC. Coordinator inicialmente foi escrito com objeto `Deps` — refatorado para múltiplos params individuais (`articlesRepository`, `authorsRepository`, etc) pra Awilix resolver corretamente.
+- **How to apply:** todo construtor de UC/Facade tipa params como `private readonly <name>: <Type>` com nome batendo com o registrado no container.
+
+### 2026-04-29 — Fase 4: rate limit in-memory por IP
+- **Decisão:** `/api/blog-import` usa `Map<ip, {count, resetAt}>` simples no módulo, 10 req/min por IP, janela deslizante.
+- **Motivo:** plan especifica 10/min. Sem Redis no MVP. Endpoint single-instance em dev/staging — rate limit em memória é suficiente.
+- **Risco em prod multi-instance:** estado por instância — pode permitir 10/min/IP × N instâncias. Em prod tomahawk single-systemd-instance, OK. Quando escalar, mover pra Redis ou middleware nginx.
 
 ---
 
