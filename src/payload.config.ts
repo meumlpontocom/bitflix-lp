@@ -6,8 +6,17 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { Users } from './collections/Users'
-import { Media } from './collections/Media'
+import { Articles } from './collections/Articles.ts'
+import { ArticleImportsLog } from './collections/ArticleImportsLog.ts'
+import { Authors } from './collections/Authors.ts'
+import { Categories } from './collections/Categories.ts'
+import { Media } from './collections/Media.ts'
+import { Products } from './collections/Products.ts'
+import { Tags } from './collections/Tags.ts'
+import { Users } from './collections/Users.ts'
+
+import { Navigation } from './globals/Navigation.ts'
+import { SiteSettings } from './globals/SiteSettings.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -18,8 +27,21 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      titleSuffix: ' · Bitflix admin',
+    },
   },
-  collections: [Users, Media],
+  collections: [
+    Users,
+    Authors,
+    Articles,
+    Categories,
+    Tags,
+    Products,
+    Media,
+    ArticleImportsLog,
+  ],
+  globals: [SiteSettings, Navigation],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,

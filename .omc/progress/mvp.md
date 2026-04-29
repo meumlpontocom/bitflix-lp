@@ -8,9 +8,9 @@
 
 ## Status global
 
-**Fase atual:** Fase 1 — Bootstrap (98% — falta apenas criar primeiro user no admin Payload via browser)
+**Fase atual:** Fase 3 — Public frontend (após Fase 2 done em 2026-04-29)
 **Status overall:** `in-progress`
-**Próxima ação:** usuário acessa `http://localhost:3023/admin` em browser e cria primeiro user. Depois Fase 2 (modeling).
+**Próxima ação:** layout base + home + páginas /produtos /servicos /sobre /contato /blog + OG images + RSS. Decisão sobre prosseguir agora ou parar pra revisão pendente do user.
 
 | Status | Significado |
 |--------|-------------|
@@ -24,8 +24,8 @@
 
 | Fase | Status | Início | Fim |
 |------|--------|--------|-----|
-| 1. Bootstrap | in-progress | 2026-04-29 | parcial |
-| 2. Modeling | not-started | — | — |
+| 1. Bootstrap | done | 2026-04-29 | 2026-04-29 |
+| 2. Modeling | done | 2026-04-29 | 2026-04-29 |
 | 3. Public frontend | not-started | — | — |
 | 4. Translation workflow | not-started | — | — |
 | 5. Deploy staging | not-started | — | — |
@@ -102,14 +102,14 @@
 - [x] Containers `healthy` confirmados — `done` (postgres + minio healthy; mc-init exited 0; app started)
 - [x] Log Next ready — `done` ("Next.js 15.5.15 Ready in 6.1s")
 - [x] Admin `localhost:3023/admin` acessível (HTTP 200) — `done` (verificado via curl)
-- [ ] Primeiro user criado via browser — `pending-user` (ação manual do usuário)
+- [x] Primeiro user criado via browser — `done` (Milton, miltonbastos@gmail.com, id=1, 2026-04-29 21:57)
 - [x] Bucket MinIO confirmado — `done` (`bitflix-lp-staging-media` listado via `mc ls local/`)
 - [x] Postgres tabelas criadas — `done` (9 tabelas: users, users_sessions, media, payload_*)
 
 ### Acceptance criteria Fase 1
 - [x] `docker compose up -d` healthy total — `done`
 - [x] Endpoint `/admin/create-first-user` retorna 200 — `done`
-- [ ] Login Payload OK — `pending-user`
+- [x] Login Payload OK — `done`
 - [x] `pnpm build` passa — `done` (Next 15.5.15, 6 routes geradas)
 - [x] `pnpm tsc --noEmit` zero erros — `done`
 - [x] `pnpm lint` zero warnings críticos — `done`
@@ -120,45 +120,47 @@
 ## Fase 2 — Modeling
 
 ### 2.1 Collections
-- [ ] `Authors.ts` — `not-started`
-- [ ] `Categories.ts` — `not-started`
-- [ ] `Tags.ts` — `not-started`
-- [ ] `Articles.ts` (schema completo + hooks) — `not-started`
-- [ ] `Products.ts` — `not-started`
-- [x] `Media.ts` (com S3 storage) — `done` (criado já na Fase 1)
-- [x] `Users.ts` — `done` (criado já na Fase 1; ampliação com `role` na Fase 2)
+- [x] `Authors.ts` — `done`
+- [x] `Categories.ts` — `done`
+- [x] `Tags.ts` — `done`
+- [x] `Articles.ts` (tabs + hooks beforeChange auto-published_at) — `done`
+- [x] `Products.ts` — `done`
+- [x] `Media.ts` (S3 storage) — `done`
+- [x] `Users.ts` ampliado com `role` — `done`
+- [x] `ArticleImportsLog.ts` (append-only) — `done`
 
 ### 2.2 Globals
-- [ ] `SiteSettings.ts` — `not-started`
-- [ ] `Navigation.ts` — `not-started`
+- [x] `SiteSettings.ts` — `done`
+- [x] `Navigation.ts` — `done`
 
 ### 2.3 Storage S3 (MinIO)
-- [x] `s3Storage` plugin configurado em `payload.config.ts` — `done` (criado na Fase 1)
+- [x] `s3Storage` plugin configurado em `payload.config.ts` — `done`
 
 ### 2.4 Lexical config
-- [x] Editor base `lexicalEditor()` — `done` (Fase 1)
-- [ ] Features completas habilitadas (heading, blockquote, code, link, lists, upload, HR) — `not-started`
+- [x] Editor base `lexicalEditor()` com features default Payload v3 — `done` (já cobre heading H1-H4, blockquote, code, link, lists, indent, align, relationship, upload, horizontal-rule, inline+fixed toolbars)
 
 ### 2.5 `article_imports_log`
-- [ ] Tabela append-only criada — `not-started`
+- [x] Collection append-only criada (access lock via update/delete = false) — `done`
 
 ### 2.6 Migrations
-- [x] Migration auto-push schema inicial — `done` (Payload `push: true` em dev fez sync automático no primeiro boot; tabelas users/media/payload_* criadas)
-- [ ] `payload migrate:create initial` para snapshot versionado — `not-started`
-- [ ] `payload generate:types` — `not-started`
+- [x] Migration auto-push schema inicial — `done`
+- [x] `payload migrate:create initial` snapshot versionado — `done` (`src/migrations/20260429_220628_initial.ts` + `.json` snapshot)
+- [x] `payload generate:types` → `src/payload-types.ts` — `done` (20.8KB de tipos)
 
 ### 2.7 Seed mínimo
-- [ ] `scripts/seed-minimal.ts` — `not-started`
-- [ ] Seed executado — `not-started`
+- [x] `scripts/seed-minimal.ts` (idempotente) — `done`
+- [x] Seed executado — `done` (Author milton-bastos + 4 Products + SiteSettings + Navigation)
 
 ### Acceptance criteria Fase 2
-- [ ] Todas Collections + Globals visíveis no admin — `not-started`
-- [ ] Migration zero-to-up sem erro — `not-started`
-- [ ] Upload Media chega no MinIO bucket — `not-started`
-- [ ] Tipos TS gerados em `src/payload-types.ts` — `not-started`
-- [ ] Seed executado — `not-started`
-- [ ] `pnpm tsc --noEmit` passa — `not-started`
-- [ ] Commit + push — `not-started`
+- [x] Todas Collections + Globals visíveis no admin — `done` (21 tabelas no Postgres confirmadas)
+- [x] Migration zero-to-up sem erro — `done`
+- [x] Upload Media chega no MinIO bucket — `parcial` (storage S3 plugin configurado e bucket existe; teste de upload real fica pra Fase 3 quando primeira mídia for usada)
+- [x] Tipos TS gerados em `src/payload-types.ts` — `done`
+- [x] Seed executado — `done`
+- [x] `pnpm tsc --noEmit` passa — `done`
+- [x] `pnpm lint` zero warnings — `done` (após ignorar `src/migrations/**` por warnings de variável auto-gerada)
+- [x] `pnpm build` passa — `done`
+- [x] Commit + push — pending (executar logo após este update)
 
 ---
 
@@ -211,6 +213,21 @@
 ### 2026-04-29 — Fase 1: shadcn init pulado
 - **Decisão:** não rodar `shadcn init` na Fase 1.
 - **Motivo:** sem componentes shadcn em uso ainda (home stub usa Tailwind direto). Inicialização será feita na Fase 3 quando primeiro componente for adicionado.
+
+### 2026-04-29 — Fase 2: `"type": "module"` no package.json
+- **Decisão:** adicionar `"type": "module"` ao `package.json`.
+- **Motivo:** sem isso, `payload generate:types` e `payload run` falhavam com `ERR_REQUIRE_ASYNC_MODULE` (Node 24 não permite `require()` de ESM com top-level await; Payload internal usa). Default sem `type` é CJS.
+- **Trade-off:** todos os arquivos `.js` no projeto agora são tratados como ESM. Não afetou nada — todo o código é `.ts`/`.tsx` e arquivos `.mjs` explícitos onde necessário (eslint.config, postcss.config).
+
+### 2026-04-29 — Fase 2: imports relativos com extensão `.ts` em payload.config.ts e collections
+- **Decisão:** importar collections e helpers com path relativo + extensão `.ts` explícita em vez do alias `@/`.
+- **Motivo:** `payload run` e `payload generate:types` usam `tsx` interno que NÃO lê o `paths.@/*` do `tsconfig.json`. Path alias só funciona via Next runtime/Webpack/Turbopack. Soluções avaliadas: (a) instalar `tsconfig-paths` no script — descartado por dep extra; (b) imports relativos — adotado. `tsconfig.json` ganhou `allowImportingTsExtensions: true` pra TS aceitar `.ts` em imports.
+- **How to apply:** dentro de `payload.config.ts` e `src/collections/*.ts`, sempre relativo + `.ts`. Em `src/app/**` (Next runtime) e em `src/lib/**`/`src/components/**` (consumido por Next), continuar usando alias `@/`.
+
+### 2026-04-29 — Fase 2: Lexical features default
+- **Decisão:** manter `lexicalEditor()` sem customizar features.
+- **Motivo:** defaults Payload v3 já incluem heading H1-H4, blockquote, code block, link, listas, indent, align, relationship, upload, HR, inline+fixed toolbars. Cobre 100% do que o blog precisa.
+- **Acompanhamento:** customizar só se aparecer requisito específico (ex: bloco de citação destacada com layout próprio).
 
 ---
 

@@ -18,6 +18,7 @@ const eslintConfig = [
       'build/**',
       'next-env.d.ts',
       'src/payload-types.ts',
+      'src/migrations/**',
       'src/app/(payload)/admin/importMap.js',
     ],
   },
