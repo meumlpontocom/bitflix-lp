@@ -1,6 +1,6 @@
 # bitflix-lp — Conventions and Local Standards
 
-> Living document. Last updated: 2026-04-29.
+> Living document. Last updated: 2026-04-29 (após Fase 4).
 > Base engineering standards: `~/.engineering-standards/STANDARDS.md`.
 > Este arquivo cobre apenas o que é específico ao projeto.
 
@@ -20,17 +20,17 @@
 | Storage | MinIO (S3-compat) via `@payloadcms/storage-s3` |
 | Cache | NÃO usar Redis no MVP |
 | Queue | NÃO se aplica no MVP |
-| DI Container | Awilix (CLASSIC mode) — `src/container.ts` |
-| UI | shadcn/ui (new-york) + Tailwind 4.2.4 |
-| Data Fetching (server) | Payload Local API + native `fetch` |
-| Data Fetching (client) | TanStack Query |
-| Forms | react-hook-form + `@hookform/resolvers/zod` |
+| DI Container | Awilix 12.0.5 (CLASSIC mode) — `src/container.ts` |
+| UI | shadcn/ui preset Nova (Geist + Lucide) + Tailwind 4.2.4. Componentes instalados: `button`, `card`, `badge`, `separator`, `sheet`. |
+| Data Fetching (server) | Payload Local API (`src/lib/payload.ts` singleton) |
+| Data Fetching (client) | TanStack Query — **não instalado no MVP** (site público é Server Components-only). Adicionar quando aparecer feature client com refetch. |
+| Forms | react-hook-form + `@hookform/resolvers/zod` — **não instalado no MVP** (sem forms client). Adicionar com primeira feature de form. |
 | Validation | Zod 4.3.6 (schemas em `src/lib/validators/`) |
-| Toasts | sonner |
+| Toasts | sonner — **não instalado no MVP** |
 | State client | UI state local (`useState`). Sem Zustand no MVP. |
-| Slides | reveal.js ^5 |
-| OG images | `@vercel/og` |
-| Analytics | Umami self-hosted (`stats.bitflix.com.br`) |
+| Slides | reveal.js 5.2.1 + `@types/reveal.js` 5.2.1 |
+| OG images | `@vercel/og` 0.6.5 (também usável via `next/og` que reexporta) |
+| Analytics | Umami self-hosted (`stats.bitflix.com.br`), site_id via Global `SiteSettings.umami_website_id` |
 
 ---
 
@@ -53,6 +53,12 @@ Cada item afeta como/onde escrever código no projeto. Não revisitar sem ler `.
 - **Páginas `error.tsx`, `not-found.tsx`, `global-error.tsx`** todas têm `export const dynamic = 'force-dynamic'`. Mantém blindagem se Next 15 reintroduzir a regressão de prerender que fez Next 16 ser inviável (`useContext null` em `_global-error`/`_not-found`). Não remover sem testar build.
 - **Geist via `next/font/google`** (não pelo package `geist`). Package `geist 1.7.0` instalado mas não em uso — pode remover quando confirmar.
 - **`importMap.js` em `src/app/(payload)/admin/`** é regenerado por Payload em dev/build. Sempre committar a versão final pra evitar diff sujo. Lint já ignora.
+- **shadcn preset `nova`** (Geist + Lucide) inicializado em `components.json`. Add components com `pnpm dlx shadcn@latest add <nome>` dentro do container. shadcn pode injetar entradas duplicadas em `globals.css` (ex: `--font-sans: var(--font-sans)`); reapontar manualmente pra `var(--font-geist-sans)`.
+- **Site público em `src/app/(site)/`** (não `(public)/`). Layout `(site)/layout.tsx` busca `Navigation` + `SiteSettings` via Payload Local API e injeta em header/footer/Umami.
+- **VMs obrigatórios** em `src/dto/{article,product,author,site}.ts`. Server Components consomem só VMs. Services em `src/services/*.service.ts` retornam VMs (`toArticleVM`, `toProductVM`, etc), nunca entities Payload diretas.
+- **Cover image fallback**: `coverUrl = /og/[slug]` quando `cover_image_override` e `cover_image` ambos vazios. Componentes `Image` usam `unoptimized={url.startsWith('/og/')}` pra não re-otimizar PNG já gerado pelo `next/og`.
+- **Repositories Payload-based** (Fase 4): `src/repositories/*.repository.ts` consomem `Payload Local API` (`payload.find/create/update`). Sem Drizzle direto no MVP. Quando precisar Drizzle (agregação, query custom), criar arquivo em `src/repositories/` ou `src/lib/db/` — checklist 1 garante.
+- **Awilix CLASSIC params individuais**: construtores recebem cada dep como param nomeado (`private readonly articlesRepository: ArticlesRepository`), não objeto `Deps`. Coordinator UC com 6 deps tem 6 params.
 
 ---
 
@@ -86,101 +92,125 @@ Globals:
 
 ## Folder Structure
 
+Reflete realidade pós Fases 3+4 (2026-04-29). Atualizar quando criar nova subarea.
+
 ```
 src/
   app/
-    (public)/                    # site público (Server Components default)
-      page.tsx                   # home (~10 linhas)
+    (site)/                                  # site público (Server Components por default)
+      layout.tsx                             # header + main + footer + Umami
+      page.tsx                               # home
       produtos/page.tsx
       servicos/page.tsx
       sobre/page.tsx
       contato/page.tsx
       blog/
-        page.tsx                 # listing
-        [slug]/page.tsx
-        [slug]/slides/page.tsx
-        feed.xml/route.ts
-        components/
-    (payload)/                   # admin Payload (auto-gerado)
+        page.tsx                             # listing + filtros + paginação
+        [slug]/page.tsx                      # article detail (Lexical render + source + disclaimer)
+        [slug]/slides/page.tsx               # reveal.js client wrapper
+        [slug]/slides/slides.css
+    (payload)/                               # admin Payload (auto-gerado)
       admin/[[...segments]]/page.tsx
+      admin/importMap.js
       api/[...slug]/route.ts
+      api/graphql/route.ts
+      api/graphql-playground/route.ts
     api/
-      blog-import/route.ts       # endpoint custom (CC skill)
-      og/[slug]/route.ts         # OG image dinâmica
-    layout.tsx
-    providers.tsx
-  middleware.ts                  # roteamento por hostname (cms.staging.* vs staging.*)
-  collections/                   # Payload Collections (configs TS)
-    Articles.ts
-    Categories.ts
-    Tags.ts
-    Authors.ts
-    Products.ts
-    Users.ts
-    Media.ts
+      blog-import/route.ts                   # POST cria Article draft (auth Bearer)
+      blog-publish/route.ts                  # POST promove draft → published + revalidatePath
+    blog/feed.xml/route.ts                   # RSS feed
+    og/[slug]/route.tsx                      # OG image dinâmica (next/og, runtime nodejs)
+    sitemap.ts                               # Next sitemap helper
+    robots.ts                                # Next robots helper
+    layout.tsx                               # root: html + body + fontes Geist
+    error.tsx / not-found.tsx / global-error.tsx
+    globals.css                              # Tailwind 4 + tokens shadcn + paleta Bitflix
+  middleware.ts                              # roteamento por hostname (cms.* vs site público)
+  collections/                               # Payload Collections (imports relativos com .ts)
+    Users.ts Authors.ts Articles.ts Categories.ts Tags.ts Products.ts Media.ts ArticleImportsLog.ts
   globals/
     SiteSettings.ts
     Navigation.ts
   facades/
     blog/
-      blog-import.facade.ts
-      list-articles.facade.ts
+      blog-import.facade.ts                  # cria Article draft (parseOrThrow + AppError)
+      publish-article.facade.ts              # promove draft → published + revalidatePath
   use-cases/
     blog/
-      fetch-source-content.use-case.ts
-      adapt-content.use-case.ts
-      markdown-to-lexical.use-case.ts
-      generate-slides.use-case.ts
-      create-article-coordinator.use-case.ts
-      create-article.use-case.ts
       ensure-category.use-case.ts
-      ensure-tags.use-case.ts
-  repositories/
+      ensure-tag.use-case.ts
+      create-article.use-case.ts
+      create-import-log.use-case.ts
+      publish-article.use-case.ts
+      create-article-from-import.coordinator.use-case.ts   # orquestra ensure+create+log
+  repositories/                              # Payload Local API based (sem Drizzle direto no MVP)
     articles.repository.ts
+    authors.repository.ts
     categories.repository.ts
     tags.repository.ts
-    authors.repository.ts
-    products.repository.ts
-  providers/
-    contracts/
-      llm.provider.ts
-      content-extractor.provider.ts
-    anthropic-llm.provider.ts
-    readability-extractor.provider.ts
-  services/
-    blog-articles.service.ts     # frontend fetch wrapper
+    article-imports-log.repository.ts
+  services/                                  # wrappers Payload p/ Server Components do site
+    articles.service.ts
+    authors.service.ts
+    categories.service.ts
     products.service.ts
-  hooks/
-    use-articles.ts
-    use-products.ts
+    site.service.ts
   components/
-    ui/                          # shadcn-generated
+    ui/                                      # shadcn (button, card, badge, separator, sheet)
     layout/
-      site-header.tsx
+      site-header.tsx                        # sticky + sheet mobile
       site-footer.tsx
     blog/
       article-card.tsx
-      slide-deck.tsx
-  view-models/
-    article-view-model.ts
-    product-view-model.ts
-  dto/
-    index.ts                     # re-exports tipos das Collections
+      article-meta.tsx
+      article-source.tsx
+      disclaimer.tsx
+      category-filter.tsx
+      pagination.tsx
+      slide-deck.tsx                         # client component reveal.js wrapper
+    products/
+      product-card.tsx
+    cta/
+      whatsapp-button.tsx
+    decor/
+      dot-grid.tsx
+    lexical/
+      render-lexical.tsx                     # @payloadcms/richtext-lexical/react wrapper
+    analytics/
+      umami.tsx
+  dto/                                       # ViewModels (UI nunca consome Article entity Payload)
+    article.ts product.ts author.ts site.ts
   lib/
-    validators/                  # Zod schemas (compartilhados FE/BE neste mesmo app)
-    formatters.ts                # BR formatting (R$, datas, números)
-    constants/                   # routes, query keys, label maps
-    utils/
-      uuid.ts                    # uuid v7 helper
-    db/                          # Drizzle direct (se necessário fora do Payload)
-    errors/                      # AppError + subclasses
-  store/                         # vazio MVP (sem auth público nem state global)
-  container.ts                   # Awilix CLASSIC
+    payload.ts                               # getPayload singleton helper
+    formatters.ts                            # BR (R$, datas, horários)
+    slugify.ts
+    utils.ts                                 # cn() (tailwind-merge + clsx)
+    whatsapp.ts                              # buildWhatsAppUrl helper
+    auth/
+      blog-import-token.ts                   # verify Bearer + constant-time + fingerprint
+    constants/
+      routes.ts
+      query-keys.ts
+    validators/                              # Zod schemas centralizados
+      parseOrThrow.ts
+      blog-import.ts
+    db/                                      # (vazio MVP — Drizzle direto não usado ainda)
+  errors/
+    AppError.ts                              # AppError + NotFound/Conflict/Forbidden/Validation
+  hooks/                                     # (vazio MVP — TanStack Query hooks futuros)
+  providers/                                 # (vazio MVP — LLM/extractor providers futuros)
+  container.ts                               # Awilix CLASSIC
+  middleware.ts
   payload.config.ts
+  payload-types.ts                           # auto-gerado por payload generate:types
+  migrations/                                # snapshots versionados (auto-push em dev)
 docs/
-  CONVENTIONS.md
-  PROJECT_SPEC.md
-  INFRA.md
+  CONVENTIONS.md PROJECT_SPEC.md INFRA.md
+.omc/
+  plans/mvp.md                               # contrato das 6 fases
+  progress/mvp.md                            # estado de execução + decisões + bloqueios
+scripts/
+  seed-minimal.ts                            # `pnpm seed`
 ```
 
 ---
@@ -201,7 +231,8 @@ docs/
 | `/og/[slug]` | OG image dinâmica (1200x630, Geist + paleta) | público (Next route handler) |
 | `/admin/*` | Painel Payload | autenticado (Users) |
 | `/api/payload/*` | API Payload built-in | autenticado |
-| `/api/blog-import` | Endpoint custom para skill CC importar artigo | token via header `X-Bitflix-Import-Token` |
+| `/api/blog-import` | Endpoint custom para skill `/blog-import` criar Article em `draft` | token via header `Authorization: Bearer $BLOG_IMPORT_TOKEN` |
+| `/api/blog-publish` | Endpoint custom para skill `/blog-publish` promover `draft → published` + revalidar paths | token via header `Authorization: Bearer $BLOG_IMPORT_TOKEN` |
 
 **Regra**: roteamento por hostname via `middleware.ts`:
 - `staging.bitflix.com.br` / `bitflix.com.br` → site público; bloqueia `/admin/*` e `/api/payload/*` (rewrite 404).
@@ -227,8 +258,10 @@ Tudo que diverge do STANDARDS.md:
 - **NestJS Controllers**: substituídos por **Next API route handlers** em `src/app/api/<resource>/route.ts`. Permanece o princípio: route fina, valida com `parseOrThrow`, chama 1 facade.
 - **`@Inject(DATABASE)`**: substituído por injection key Awilix (`db`, `payload`).
 - **Apresentação de Articles**: ViewModel obrigatório (`ArticleViewModel`), nunca renderizar `Article` (Payload entity) direto em components. Justificativa: schema Payload tem campos administrativos (`_status`, `versions`) que não fazem sentido na UI.
-- **Coordinator UC abre transação**: já é o padrão atual STANDARDS (2026-04-10), reforçado aqui — facades NUNCA recebem `db`.
+- **Coordinator UC abre transação**: já é o padrão atual STANDARDS (2026-04-10), reforçado aqui — facades NUNCA recebem `db`. **MVP exception**: Fase 4 não usa `payload.db.beginTransaction` — operações `ensureCategory` → `ensureTag` → `createArticle` → `createImportLog` rodam sequencialmente, atômicas per-call. Risco aceito (artigo órfão se import-log falhar). Migrar pra tx Payload v3 quando volume justificar.
 - **Auth no admin**: Payload Users Collection. Sem Auth.js/NextAuth.
+- **Auth nos endpoints custom (`/api/blog-import`, `/api/blog-publish`)**: header `Authorization: Bearer $BLOG_IMPORT_TOKEN`. Comparison constant-time (`src/lib/auth/blog-import-token.ts`). Fingerprint (8 primeiros chars) salvo em `article_imports_log.triggered_by`.
+- **Repositories Payload-based**: Fase 4 usa `payload.find/create/update` direto via `Payload Local API`. Drizzle direto fica reservado pra queries que escapam do shape Payload (ex: agregações, joins customizados) e devem viver em `src/repositories/` ou `src/lib/db/` (regra do checklist mantida).
 
 ---
 
@@ -252,19 +285,20 @@ Tudo que diverge do STANDARDS.md:
 - `S3_ACCESS_KEY` / `S3_SECRET_KEY` — MinIO credentials (escopo só ao bucket)
 - `S3_BUCKET` — `bitflix-lp-media` (prod) ou `bitflix-lp-staging-media` (staging)
 - `S3_REGION` — `us-east-1` (default MinIO)
-- `BLOG_IMPORT_TOKEN` — token estático que `/api/blog-import` valida no header
-- `UMAMI_WEBSITE_ID` — só em prod (não tracking em staging)
-- `UMAMI_SCRIPT_URL` — `https://stats.bitflix.com.br/script.js`
-- `LLM_API_KEY` — Anthropic key para skill de adaptação (opcional, usado pelo provider)
+- `BLOG_IMPORT_TOKEN` — token estático que `/api/blog-import` e `/api/blog-publish` validam via header `Authorization: Bearer <token>` (constant-time comparison; primeiros 8 chars salvos como fingerprint em `article_imports_log.triggered_by`)
+- `UMAMI_WEBSITE_ID` — só em prod (não tracking em staging). Lido via Global `SiteSettings.umami_website_id` em runtime, não env var.
+- `UMAMI_SCRIPT_URL` — `https://stats.bitflix.com.br/script.js` (default; pode ser sobrescrito por env)
+- `LLM_API_KEY` — Anthropic key para skill de adaptação (opcional). MVP atual: skill local roda no agente Claude Code (não consome env do server). Provider `anthropic-llm.provider.ts` futuro.
 
 ### Cache TTLs
-- RSS feed: 1h (revalidate)
-- Article listing: 5min (revalidate)
-- Article individual: ISR on-demand (`revalidatePath` quando publicar/atualizar via Payload hook `afterChange`)
-- OG image: cache forever (filename inclui hash do título/timestamp)
+- RSS feed (`/blog/feed.xml`): 1h (header `Cache-Control: public, max-age=3600, s-maxage=3600` + Next `revalidate=3600`)
+- Article listing (`/blog`): 5min (`revalidate = 300`)
+- Article individual (`/blog/[slug]`): ISR on-demand. `/api/blog-publish` chama `revalidatePath('/blog')`, `/blog/[slug]`, `/blog/feed.xml`, `/sitemap.xml`. `revalidate = 300` como fallback.
+- OG image (`/og/[slug]`): `Cache-Control: public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400` + Next `revalidate = 3600`. Runtime `nodejs` (precisa Payload Local API).
 
 ### Rate limits
-- `/api/blog-import`: 10/min por IP. Implementar via in-memory counter no MVP (única route protegida por token; volume real é o user puxando).
+- `/api/blog-import`: 10/min por IP. In-memory `Map<ip, {count, resetAt}>` no módulo (`src/app/api/blog-import/route.ts`). Single-instance OK; multi-instance prod precisa migrar pra Redis ou nginx limit_req.
+- `/api/blog-publish`: sem rate limit explícito (volume baixo — uma chamada por publicação). Auth Bearer já gate.
 
 ---
 
@@ -281,7 +315,11 @@ Tudo que diverge do STANDARDS.md:
 
 | Area | Violation | Plan |
 |------|-----------|------|
-| _none yet — projeto novo_ | | |
+| Fase 4 transações | Coordinator UC `CreateArticleFromImportCoordinatorUseCase` não abre `payload.db.beginTransaction`. Operações sequenciais atômicas per-call. Risco: artigo órfão sem `article_imports_log` se segundo passo falhar. | Migrar pra padrão Payload v3 (`req.transactionID` propagation) quando volume justificar. |
+| Fase 4 rate limit | `/api/blog-import` rate limit em memória de processo (`Map<ip, {count, resetAt}>`). Multi-instance contorna. | Em prod multi-instance: nginx `limit_req` ou Redis. Single-instance tomahawk OK no MVP. |
+| Fase 1 dep órfã | Package `geist@1.7.0` instalado mas não em uso (substituído por `next/font/google`). | Remover quando confirmar zero referências. |
+| Fase 3 lighthouse | Score Lighthouse mobile não medido. | Validar quando primeiro artigo real for publicado. |
+| Fase 4 LLM provider | Skill local roda LLM no agente Claude Code. Sem provider server-side. | Implementar `src/providers/anthropic-llm.provider.ts` se /api/blog-import precisar virar self-service (público com token). |
 
 ---
 
