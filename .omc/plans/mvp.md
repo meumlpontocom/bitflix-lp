@@ -1,11 +1,13 @@
-# Bitflix LP — Plano de Implementação MVP
+# Bitflix LP — Plano de Implementação MVP (staging)
 
-> Plano de execução completo cobrindo as 6 fases do MVP (bootstrap → produção).
-> Criado: 2026-04-29.
-> Estimativa total: 10-15 dias úteis.
+> Plano de execução do MVP em staging (Fases 1-5: bootstrap → deploy parrilla).
+> Criado: 2026-04-29. Atualizado: 2026-04-29 (Fase 6 movida para `.omc/plans/prod-deploy.md`).
+> Estimativa total: 9-14 dias úteis.
 > Pré-requisito: leitura prévia de `CLAUDE.md`, `docs/CONVENTIONS.md`, `docs/PROJECT_SPEC.md`, `docs/INFRA.md`.
 
-Este documento é o **contrato único** pra todo o MVP. Sessões futuras consultam aqui pra saber o que vem depois. Progresso de execução fica em `.omc/progress/mvp.md`.
+Este documento é o **contrato único** pra todo o MVP staging. Sessões futuras consultam aqui pra saber o que vem depois. Progresso de execução fica em `.omc/progress/mvp.md`.
+
+**Deploy produção** (tomahawk) está em plano separado: `.omc/plans/prod-deploy.md` — roda só após testes manuais em staging finalizados + sinal explícito do usuário.
 
 ---
 
@@ -18,9 +20,10 @@ Este documento é o **contrato único** pra todo o MVP. Sessões futuras consult
 | 3 | Public frontend | 3-4 dias | Fase 2 |
 | 4 | Translation workflow (skill `/blog-import`) | 3-5 dias | Fase 2 (mínimo) |
 | 5 | Deploy staging parrilla | 1 dia | Fase 1 |
-| 6 | Deploy produção tomahawk | 1 dia | Sinal explícito do usuário |
 
 Fases 3 e 4 podem rodar paralelas após Fase 2. Fase 5 pode rodar logo após Fase 1 pra liberar URL pública staging cedo.
+
+> Deploy prod (`bitflix.com.br`) está em `.omc/plans/prod-deploy.md` (plano separado, roda só após testes em staging + sinal do usuário).
 
 ---
 
@@ -562,108 +565,20 @@ Site staging acessível publicamente em `staging.bitflix.com.br` + `staging.cms.
 
 ---
 
-## Fase 6 — Deploy produção tomahawk
+## Deploy produção
 
-### Objetivo
-Site prod acessível em `bitflix.com.br` + `cms.bitflix.com.br` com TLS, rodando bare-metal via systemd no tomahawk.
+Movido para `.omc/plans/prod-deploy.md` em 2026-04-29.
 
-**ATENÇÃO**: requer sinal explícito do usuário pra começar (envolve cutover DNS apex + decisão de migração da LP atual).
-
-### Pré-requisitos pendentes (input do usuário)
-- Estratégia de migração: substituição direta vs redirect 301 da LP atual
-- WhatsApp number + mensagens default por CTA preenchidos no Payload
-- Bio Milton + manifesto preenchidos
-- Umami website ID criado em `stats.bitflix.com.br/dashboard`
-- E-mail institucional decidido (ou pular)
-
-### Passos
-
-#### 6.1 Provisionar tomahawk
-- SSH como root, criar dir `/application/bitflix-lp/` owner `meuml:meuml`
-- Como `meuml`: `nvm install 24.15.0 && nvm use 24.15.0 && nvm alias default 24.15.0`
-- `npm install -g pnpm@10.33.2`
-- Clonar repo: `cd /application && git clone git@github.com:meumlpontocom/bitflix-lp.git`
-
-#### 6.2 DB + MinIO em VM `192.168.14.20`
-- Conectar Postgres 17.5 da VM (pelo network interno do servidor físico)
-- Criar DB + user: `CREATE DATABASE bitflix_lp; CREATE USER bitflix_lp WITH PASSWORD 'STRONG_RANDOM'; GRANT ALL ON DATABASE bitflix_lp TO bitflix_lp;`
-- MinIO da VM: criar bucket `bitflix-lp-media` + access key dedicada com policy escopada ao bucket (read+write apenas)
-
-#### 6.3 `.env.production` em `/application/bitflix-lp/`
-- Owner `meuml:meuml`, perms `0640`
-- Valores: `DATABASE_URI` apontando VM, `S3_ENDPOINT=https://minio.bitflix.com.br`, `S3_BUCKET=bitflix-lp-media`, `PAYLOAD_PUBLIC_SERVER_URL=https://bitflix.com.br`, etc
-
-#### 6.4 Build e migrations
-- `cd /application/bitflix-lp && pnpm install --frozen-lockfile && pnpm build`
-- `pnpm payload migrate` aplica schema no DB prod
-- Seed mínimo: `pnpm tsx scripts/seed-minimal.ts` (mesmo seed da Fase 2)
-
-#### 6.5 systemd unit
-`/etc/systemd/system/bitflix-lp.service`:
-```ini
-[Unit]
-Description=Bitflix LP production
-After=network.target
-
-[Service]
-Type=simple
-User=meuml
-Group=meuml
-WorkingDirectory=/application/bitflix-lp
-EnvironmentFile=/application/bitflix-lp/.env.production
-ExecStart=/home/meuml/.nvm/versions/node/v24.15.0/bin/node node_modules/.bin/next start -p 3060
-Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=bitflix-lp
-
-[Install]
-WantedBy=multi-user.target
-```
-`systemctl daemon-reload && systemctl enable --now bitflix-lp`
-
-#### 6.6 nginx vhosts prod
-`/etc/nginx/sites-available/bitflix.com.br`:
-```nginx
-server {
-  listen 80;
-  server_name bitflix.com.br www.bitflix.com.br;
-  location / { proxy_pass http://127.0.0.1:3060; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto $scheme; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; }
-}
-```
-Idem `cms.bitflix.com.br` → mesmo upstream `127.0.0.1:3060`.
-Symlink + `nginx -t && systemctl reload nginx`.
-
-#### 6.7 Certbot prod
-- `certbot --nginx -d bitflix.com.br -d www.bitflix.com.br -d cms.bitflix.com.br --non-interactive --agree-tos -m miltonbastos@gmail.com`
-
-#### 6.8 Cutover DNS apex
-- **AGUARDA SINAL DO USUÁRIO** com estratégia decidida
-- Se substituição direta: trocar A record `bitflix.com.br` da LP antiga pra IP tomahawk; idem `www`
-- Se redirect 301: deixar LP antiga, criar redirect server-level OU usar domínio temporário pra prod e tarefa separada
-
-#### 6.9 CI/CD (opcional pós-MVP)
-- GitHub Actions workflow `.github/workflows/deploy.yml`:
-  - Trigger: push em `main`
-  - Steps: SSH em tomahawk via deploy key (não root), `cd /application/bitflix-lp`, `git pull`, `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm payload migrate`, `sudo systemctl restart bitflix-lp`
-- Sudoers entry pra user `meuml` permitir `systemctl restart bitflix-lp` sem senha
-- Marcar como "futuro" — Fase 6 termina antes disso, deploy manual basta no MVP
-
-### Acceptance criteria Fase 6
-- [ ] `https://bitflix.com.br` retorna home com TLS válido
-- [ ] `https://cms.bitflix.com.br/admin` mostra Payload admin com TLS
-- [ ] `https://bitflix.com.br/admin` retorna 404
-- [ ] Service `bitflix-lp` inicia automático após reboot
-- [ ] Logs visíveis em `journalctl -u bitflix-lp -f`
-- [ ] Migration aplicada
-- [ ] Backup MinIO prod **TODO documentado** (não bloqueia release, mas registrar como pendência)
+Roda apenas após:
+1. Testes manuais em staging finalizados pelo usuário
+2. Pré-requisitos preenchidos (lista no topo do `prod-deploy.md`)
+3. Sinal explícito do usuário pra iniciar
 
 ---
 
 ## Pendências transversais (registrar conforme aparecer)
 
-- Backup MinIO prod (Fase 6+): adicionar `mc mirror` cron pra outro endpoint
+- Backup MinIO prod (deploy prod): adicionar `mc mirror` cron pra outro endpoint
 - Newsletter (fora do MVP, fase 2 pós-launch)
 - Multilíngue EN do site (fora do MVP)
 - Comentários no blog (fora do MVP)
@@ -673,9 +588,10 @@ Symlink + `nginx -t && systemctl reload nginx`.
 ## Como continuar em sessão futura
 
 1. Ler `CLAUDE.md` + 3 docs em `docs/`
-2. Ler `.omc/plans/mvp.md` (este arquivo) — contexto completo do MVP
+2. Ler `.omc/plans/mvp.md` (este arquivo) — contexto MVP staging
 3. Ler `.omc/progress/mvp.md` — estado atual de execução
-4. Identificar próximo passo `not-started` ou `in-progress` no progress file
-5. Executar, atualizar progress file (status + timestamp), commit, push
+4. Se for trabalhar em deploy prod, ler `.omc/plans/prod-deploy.md`
+5. Identificar próximo passo `not-started` ou `in-progress` no progress file
+6. Executar, atualizar progress file (status + timestamp), commit, push
 
 Sessão nova nunca precisa adivinhar fase ou passo. Tudo está aqui.
