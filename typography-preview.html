@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bitflix — Typography Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-white: #FFFFFF;
+    --bg-cream: #F8EAD7;
+    --bg-cream-soft: #FBF1E1;
+    --teal-dark: #003030;
+    --teal: #008090;
+    --teal-light: #00a0a0;
+    --ink: #2d2d2d;
+    --ink-soft: #5a5a5a;
+    --border: #E5E5E5;
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg-cream-soft);
+    background-image: radial-gradient(circle, rgba(0,48,48,0.08) 1px, transparent 1px);
+    background-size: 18px 18px;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .page-title {
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    color: var(--teal-dark);
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .page-sub {
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 16px;
+    margin-bottom: 48px;
+  }
+
+  .nav {
+    position: sticky;
+    top: 0;
+    background: rgba(248, 234, 215, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 10px 16px;
+    margin: 0 auto 40px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-width: 980px;
+    z-index: 10;
+    font-family: 'Inter', sans-serif;
+  }
+  .nav a {
+    text-decoration: none;
+    color: var(--teal-dark);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 999px;
+    transition: background 0.15s;
+  }
+  .nav a:hover { background: var(--teal); color: white; }
+
+  .container { max-width: 980px; margin: 0 auto; }
+
+  .option {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .option-tag {
+    font-family: 'Inter', sans-serif;
+    display: inline-block;
+    background: var(--teal);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+
+  .option-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 24px;
+  }
+  .option-meta code {
+    background: #f3f3f3;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+  }
+
+  .h1 { font-size: 56px; line-height: 1.05; font-weight: 800; color: var(--teal-dark); margin-bottom: 16px; letter-spacing: -0.02em; }
+  .h2 { font-size: 28px; line-height: 1.2; font-weight: 700; color: var(--teal-dark); margin: 32px 0 12px; }
+  .lead { font-size: 19px; line-height: 1.55; color: var(--ink-soft); margin-bottom: 24px; max-width: 640px; }
+  .body { font-size: 16px; line-height: 1.7; color: var(--ink); max-width: 640px; margin-bottom: 24px; }
+  .body strong { color: var(--teal-dark); }
+
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0 28px; }
+  .btn {
+    display: inline-block;
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    transition: all 0.15s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--teal); color: white; }
+  .btn-primary:hover { background: var(--teal-dark); }
+  .btn-secondary { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); }
+  .btn-secondary:hover { background: var(--teal); color: white; }
+
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 700px) { .card-grid { grid-template-columns: 1fr; } .option { padding: 28px; } .h1 { font-size: 40px; } }
+
+  .article-card {
+    background: var(--bg-cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .article-card .tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--teal); margin-bottom: 12px; }
+  .article-card .title { font-size: 20px; font-weight: 700; color: var(--teal-dark); margin-bottom: 8px; line-height: 1.3; }
+  .article-card .excerpt { font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 12px; }
+  .article-card .meta { font-size: 12px; color: var(--ink-soft); }
+
+  .code-block {
+    background: #1a1a1a;
+    color: #e0e0e0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .com { color: #8b949e; font-style: italic; }
+  .code-block .fn { color: #d2a8ff; }
+
+  .number-display {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--bg-cream-soft);
+    border-radius: 12px;
+  }
+  .number-display .stat { }
+  .number-display .stat .num { font-size: 40px; font-weight: 700; color: var(--teal); line-height: 1; letter-spacing: -0.02em; }
+  .number-display .stat .label { font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; }
+
+  /* OPTION A — Inter only */
+  .opt-a, .opt-a .h1, .opt-a .h2, .opt-a .lead, .opt-a .body, .opt-a .btn,
+  .opt-a .article-card .title, .opt-a .article-card .excerpt, .opt-a .number-display .num, .opt-a .number-display .label
+  { font-family: 'Inter', sans-serif; }
+
+  /* OPTION B — Geist + Geist Mono */
+  .opt-b, .opt-b .h1, .opt-b .h2, .opt-b .lead, .opt-b .body, .opt-b .btn,
+  .opt-b .article-card .title, .opt-b .article-card .excerpt
+  { font-family: 'Geist', sans-serif; }
+  .opt-b .number-display .num { font-family: 'Geist Mono', monospace; }
+  .opt-b .number-display .label { font-family: 'Geist', sans-serif; }
+  .opt-b .code-block { font-family: 'Geist Mono', monospace; }
+
+  /* OPTION C — Plus Jakarta Sans (heading) + Inter (body) + Geist Mono (code) */
+  .opt-c .h1, .opt-c .h2, .opt-c .article-card .title { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.025em; }
+  .opt-c .lead, .opt-c .body, .opt-c .btn, .opt-c .article-card .excerpt, .opt-c .article-card .tag, .opt-c .article-card .meta { font-family: 'Inter', sans-serif; }
+  .opt-c .number-display .num { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .opt-c .number-display .label { font-family: 'Inter', sans-serif; }
+  .opt-c .code-block { font-family: 'Geist Mono', monospace; }
+
+  /* OPTION D — Bricolage Grotesque (heading) + Inter (body) */
+  .opt-d .h1, .opt-d .h2, .opt-d .article-card .title { font-family: 'Bricolage Grotesque', serif; letter-spacing: -0.02em; }
+  .opt-d .lead, .opt-d .body, .opt-d .btn, .opt-d .article-card .excerpt, .opt-d .article-card .tag, .opt-d .article-card .meta { font-family: 'Inter', sans-serif; }
+  .opt-d .number-display .num { font-family: 'Bricolage Grotesque', serif; }
+  .opt-d .number-display .label { font-family: 'Inter', sans-serif; }
+  .opt-d .code-block { font-family: 'JetBrains Mono', monospace; }
+
+  /* OPTION E — DM Sans only */
+  .opt-e, .opt-e .h1, .opt-e .h2, .opt-e .lead, .opt-e .body, .opt-e .btn,
+  .opt-e .article-card .title, .opt-e .article-card .excerpt
+  { font-family: 'DM Sans', sans-serif; }
+  .opt-e .number-display .num { font-family: 'DM Sans', sans-serif; }
+  .opt-e .number-display .label { font-family: 'DM Sans', sans-serif; }
+  .opt-e .code-block { font-family: 'JetBrains Mono', monospace; }
+
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Bitflix — Typography Preview</h1>
+<p class="page-sub">Mesmo conteúdo, 5 combinações tipográficas. Avalie hero, blog card, números, código.</p>
+
+<nav class="nav">
+  <a href="#a">A — Inter</a>
+  <a href="#b">B — Geist</a>
+  <a href="#c">C — Plus Jakarta + Inter</a>
+  <a href="#d">D — Bricolage + Inter</a>
+  <a href="#e">E — DM Sans</a>
+</nav>
+
+<div class="container">
+
+  <!-- OPTION A -->
+  <section id="a" class="option opt-a">
+    <span class="option-tag">Opção A</span>
+    <p class="option-meta">Heading + body em <code>Inter</code>. Mono em <code>Geist Mono</code>. Workhorse, neutro, seguro.</p>
+
+    <h1 class="h1">IA não é mais futuro.<br>É produto.</h1>
+    <p class="lead">A Bitflix constrói software que entrega Inteligência Artificial direto no produto do seu cliente. Não usamos IA pra desenvolver mais rápido — entregamos IA dentro do que você vende.</p>
+    <div class="btn-row">
+      <a href="#" class="btn btn-primary">Conversar no WhatsApp</a>
+      <a href="#" class="btn btn-secondary">Ver produtos</a>
+    </div>
+
+    <h2 class="h2">O que entregamos</h2>
+    <p class="body">Trabalhamos em dois trilhos. Para empresas pequenas, <strong>SaaS prontos</strong> escaláveis. Para médias e grandes, <strong>projetos personalizados</strong> que embarcam IA no software entregue. Stack moderna, código auditável, deploy reproduzível.</p>
+
+    <div class="card-grid">
+      <article class="article-card">
+        <div class="tag">Engenharia</div>
+        <div class="title">RAG sem alucinação: 7 padrões que funcionam em produção</div>
+        <p class="excerpt">Mais que vector search. Quando hierarchical retrieval, re-ranking e citation grounding viram exigência de auditoria.</p>
+        <div class="meta">12 min · 21/04/2026</div>
+      </article>
+      <article class="article-card">
+        <div class="tag">Negócio</div>
+        <div class="title">Como precificar projeto de IA quando o ROI é incerto</div>
+        <p class="excerpt">Modelos: fixo, por sucesso, retainer híbrido. Quando cada um trava ou destrava o fechamento.</p>
+        <div class="meta">8 min · 18/04/2026</div>
+      </article>
+    </div>
+
+    <div class="number-display">
+      <div class="stat"><div class="num">R$ 1.230,50</div><div class="label">ticket médio SaaS</div></div>
+      <div class="stat"><div class="num">04</div><div class="label">produtos próprios</div></div>
+      <div class="stat"><div class="num">21/03/2026</div><div class="label">último deploy</div></div>
+    </div>
+
+    <pre class="code-block">
+<span class="com">// Local API — Payload v3</span>
+<span class="kw">const</span> articles = <span class="kw">await</span> payload.<span class="fn">find</span>({
+  collection: <span class="str">'articles'</span>,
+  where: { status: { equals: <span class="str">'published'</span> } },
+  limit: <span class="str">10</span>,
+})
+    </pre>
+  </section>
+
+  <!-- OPTION B -->
+  <section id="b" class="option opt-b">
+    <span class="option-tag">Opção B</span>
+    <p class="option-meta">Heading + body em <code>Geist</code>. Mono em <code>Geist Mono</code>. Stack Vercel/Next default — moderno, geométrico.</p>
+
+    <h1 class="h1">IA não é mais futuro.<br>É produto.</h1>
+    <p class="lead">A Bitflix constrói software que entrega Inteligência Artificial direto no produto do seu cliente. Não usamos IA pra desenvolver mais rápido — entregamos IA dentro do que você vende.</p>
+    <div class="btn-row">
+      <a href="#" class="btn btn-primary">Conversar no WhatsApp</a>
+      <a href="#" class="btn btn-secondary">Ver produtos</a>
+    </div>
+
+    <h2 class="h2">O que entregamos</h2>
+    <p class="body">Trabalhamos em dois trilhos. Para empresas pequenas, <strong>SaaS prontos</strong> escaláveis. Para médias e grandes, <strong>projetos personalizados</strong> que embarcam IA no software entregue. Stack moderna, código auditável, deploy reproduzível.</p>
+
+    <div class="card-grid">
+      <article class="article-card">
+        <div class="tag">Engenharia</div>
+        <div class="title">RAG sem alucinação: 7 padrões que funcionam em produção</div>
+        <p class="excerpt">Mais que vector search. Quando hierarchical retrieval, re-ranking e citation grounding viram exigência de auditoria.</p>
+        <div class="meta">12 min · 21/04/2026</div>
+      </article>
+      <article class="article-card">
+        <div class="tag">Negócio</div>
+        <div class="title">Como precificar projeto de IA quando o ROI é incerto</div>
+        <p class="excerpt">Modelos: fixo, por sucesso, retainer híbrido. Quando cada um trava ou destrava o fechamento.</p>
+        <div class="meta">8 min · 18/04/2026</div>
+      </article>
+    </div>
+
+    <div class="number-display">
+      <div class="stat"><div class="num">R$ 1.230,50</div><div class="label">ticket médio SaaS</div></div>
+      <div class="stat"><div class="num">04</div><div class="label">produtos próprios</div></div>
+      <div class="stat"><div class="num">21/03/2026</div><div class="label">último deploy</div></div>
+    </div>
+
+    <pre class="code-block">
+<span class="com">// Local API — Payload v3</span>
+<span class="kw">const</span> articles = <span class="kw">await</span> payload.<span class="fn">find</span>({
+  collection: <span class="str">'articles'</span>,
+  where: { status: { equals: <span class="str">'published'</span> } },
+  limit: <span class="str">10</span>,
+})
+    </pre>
+  </section>
+
+  <!-- OPTION C -->
+  <section id="c" class="option opt-c">
+    <span class="option-tag">Opção C — recomendada</span>
+    <p class="option-meta">Heading <code>Plus Jakarta Sans</code> + body <code>Inter</code> + mono <code>Geist Mono</code>. Headings rounded combinam com lowercase da logo.</p>
+
+    <h1 class="h1">IA não é mais futuro.<br>É produto.</h1>
+    <p class="lead">A Bitflix constrói software que entrega Inteligência Artificial direto no produto do seu cliente. Não usamos IA pra desenvolver mais rápido — entregamos IA dentro do que você vende.</p>
+    <div class="btn-row">
+      <a href="#" class="btn btn-primary">Conversar no WhatsApp</a>
+      <a href="#" class="btn btn-secondary">Ver produtos</a>
+    </div>
+
+    <h2 class="h2">O que entregamos</h2>
+    <p class="body">Trabalhamos em dois trilhos. Para empresas pequenas, <strong>SaaS prontos</strong> escaláveis. Para médias e grandes, <strong>projetos personalizados</strong> que embarcam IA no software entregue. Stack moderna, código auditável, deploy reproduzível.</p>
+
+    <div class="card-grid">
+      <article class="article-card">
+        <div class="tag">Engenharia</div>
+        <div class="title">RAG sem alucinação: 7 padrões que funcionam em produção</div>
+        <p class="excerpt">Mais que vector search. Quando hierarchical retrieval, re-ranking e citation grounding viram exigência de auditoria.</p>
+        <div class="meta">12 min · 21/04/2026</div>
+      </article>
+      <article class="article-card">
+        <div class="tag">Negócio</div>
+        <div class="title">Como precificar projeto de IA quando o ROI é incerto</div>
+        <p class="excerpt">Modelos: fixo, por sucesso, retainer híbrido. Quando cada um trava ou destrava o fechamento.</p>
+        <div class="meta">8 min · 18/04/2026</div>
+      </article>
+    </div>
+
+    <div class="number-display">
+      <div class="stat"><div class="num">R$ 1.230,50</div><div class="label">ticket médio SaaS</div></div>
+      <div class="stat"><div class="num">04</div><div class="label">produtos próprios</div></div>
+      <div class="stat"><div class="num">21/03/2026</div><div class="label">último deploy</div></div>
+    </div>
+
+    <pre class="code-block">
+<span class="com">// Local API — Payload v3</span>
+<span class="kw">const</span> articles = <span class="kw">await</span> payload.<span class="fn">find</span>({
+  collection: <span class="str">'articles'</span>,
+  where: { status: { equals: <span class="str">'published'</span> } },
+  limit: <span class="str">10</span>,
+})
+    </pre>
+  </section>
+
+  <!-- OPTION D -->
+  <section id="d" class="option opt-d">
+    <span class="option-tag">Opção D</span>
+    <p class="option-meta">Heading <code>Bricolage Grotesque</code> (variable, formas modernas) + body <code>Inter</code>. Mais personalidade, mais arriscado.</p>
+
+    <h1 class="h1">IA não é mais futuro.<br>É produto.</h1>
+    <p class="lead">A Bitflix constrói software que entrega Inteligência Artificial direto no produto do seu cliente. Não usamos IA pra desenvolver mais rápido — entregamos IA dentro do que você vende.</p>
+    <div class="btn-row">
+      <a href="#" class="btn btn-primary">Conversar no WhatsApp</a>
+      <a href="#" class="btn btn-secondary">Ver produtos</a>
+    </div>
+
+    <h2 class="h2">O que entregamos</h2>
+    <p class="body">Trabalhamos em dois trilhos. Para empresas pequenas, <strong>SaaS prontos</strong> escaláveis. Para médias e grandes, <strong>projetos personalizados</strong> que embarcam IA no software entregue. Stack moderna, código auditável, deploy reproduzível.</p>
+
+    <div class="card-grid">
+      <article class="article-card">
+        <div class="tag">Engenharia</div>
+        <div class="title">RAG sem alucinação: 7 padrões que funcionam em produção</div>
+        <p class="excerpt">Mais que vector search. Quando hierarchical retrieval, re-ranking e citation grounding viram exigência de auditoria.</p>
+        <div class="meta">12 min · 21/04/2026</div>
+      </article>
+      <article class="article-card">
+        <div class="tag">Negócio</div>
+        <div class="title">Como precificar projeto de IA quando o ROI é incerto</div>
+        <p class="excerpt">Modelos: fixo, por sucesso, retainer híbrido. Quando cada um trava ou destrava o fechamento.</p>
+        <div class="meta">8 min · 18/04/2026</div>
+      </article>
+    </div>
+
+    <div class="number-display">
+      <div class="stat"><div class="num">R$ 1.230,50</div><div class="label">ticket médio SaaS</div></div>
+      <div class="stat"><div class="num">04</div><div class="label">produtos próprios</div></div>
+      <div class="stat"><div class="num">21/03/2026</div><div class="label">último deploy</div></div>
+    </div>
+
+    <pre class="code-block">
+<span class="com">// Local API — Payload v3</span>
+<span class="kw">const</span> articles = <span class="kw">await</span> payload.<span class="fn">find</span>({
+  collection: <span class="str">'articles'</span>,
+  where: { status: { equals: <span class="str">'published'</span> } },
+  limit: <span class="str">10</span>,
+})
+    </pre>
+  </section>
+
+  <!-- OPTION E -->
+  <section id="e" class="option opt-e">
+    <span class="option-tag">Opção E</span>
+    <p class="option-meta">Heading + body em <code>DM Sans</code>. Friendly, geometric, lowercase combina com logo. Body em sessões longas pode cansar.</p>
+
+    <h1 class="h1">IA não é mais futuro.<br>É produto.</h1>
+    <p class="lead">A Bitflix constrói software que entrega Inteligência Artificial direto no produto do seu cliente. Não usamos IA pra desenvolver mais rápido — entregamos IA dentro do que você vende.</p>
+    <div class="btn-row">
+      <a href="#" class="btn btn-primary">Conversar no WhatsApp</a>
+      <a href="#" class="btn btn-secondary">Ver produtos</a>
+    </div>
+
+    <h2 class="h2">O que entregamos</h2>
+    <p class="body">Trabalhamos em dois trilhos. Para empresas pequenas, <strong>SaaS prontos</strong> escaláveis. Para médias e grandes, <strong>projetos personalizados</strong> que embarcam IA no software entregue. Stack moderna, código auditável, deploy reproduzível.</p>
+
+    <div class="card-grid">
+      <article class="article-card">
+        <div class="tag">Engenharia</div>
+        <div class="title">RAG sem alucinação: 7 padrões que funcionam em produção</div>
+        <p class="excerpt">Mais que vector search. Quando hierarchical retrieval, re-ranking e citation grounding viram exigência de auditoria.</p>
+        <div class="meta">12 min · 21/04/2026</div>
+      </article>
+      <article class="article-card">
+        <div class="tag">Negócio</div>
+        <div class="title">Como precificar projeto de IA quando o ROI é incerto</div>
+        <p class="excerpt">Modelos: fixo, por sucesso, retainer híbrido. Quando cada um trava ou destrava o fechamento.</p>
+        <div class="meta">8 min · 18/04/2026</div>
+      </article>
+    </div>
+
+    <div class="number-display">
+      <div class="stat"><div class="num">R$ 1.230,50</div><div class="label">ticket médio SaaS</div></div>
+      <div class="stat"><div class="num">04</div><div class="label">produtos próprios</div></div>
+      <div class="stat"><div class="num">21/03/2026</div><div class="label">último deploy</div></div>
+    </div>
+
+    <pre class="code-block">
+<span class="com">// Local API — Payload v3</span>
+<span class="kw">const</span> articles = <span class="kw">await</span> payload.<span class="fn">find</span>({
+  collection: <span class="str">'articles'</span>,
+  where: { status: { equals: <span class="str">'published'</span> } },
+  limit: <span class="str">10</span>,
+})
+    </pre>
+  </section>
+
+</div>
+
+</body>
+</html>
