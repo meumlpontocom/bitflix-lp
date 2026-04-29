@@ -25,7 +25,7 @@ Detalhe completo em `docs/PROJECT_SPEC.md` seção 1.
 
 | Camada | Tecnologia (lock 2026-04-29) |
 |--------|------------------------------|
-| Framework | Next.js 16.2.4 (App Router) + React 19.2.5 |
+| Framework | Next.js 15.5.15 (App Router) + React 19.2.5 — alvo original era 16.2.4 mas regressão Next 16 + React 19 quebra prerender de páginas internas (ver `.omc/progress/mvp.md` → Decisões 2026-04-29) |
 | Linguagem | TypeScript 5.9.3 (NÃO 6.x ainda) |
 | CMS | Payload 3.84.1 |
 | DB | PostgreSQL 17.5 |

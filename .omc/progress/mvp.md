@@ -8,9 +8,9 @@
 
 ## Status global
 
-**Fase atual:** Fase 1 — Bootstrap
-**Status overall:** `not-started`
-**Próxima ação:** rodar pré-flight da Fase 1.1
+**Fase atual:** Fase 1 — Bootstrap (95% — falta criar primeiro user no admin via browser e push pro GitHub após auth meumlpontocom)
+**Status overall:** `in-progress`
+**Próxima ação:** usuário criar primeiro user no admin Payload (`http://localhost:3023/admin`) + autenticar gh CLI na conta `meumlpontocom` para push do código.
 
 | Status | Significado |
 |--------|-------------|
@@ -24,7 +24,7 @@
 
 | Fase | Status | Início | Fim |
 |------|--------|--------|-----|
-| 1. Bootstrap | not-started | — | — |
+| 1. Bootstrap | in-progress | 2026-04-29 | parcial |
 | 2. Modeling | not-started | — | — |
 | 3. Public frontend | not-started | — | — |
 | 4. Translation workflow | not-started | — | — |
@@ -36,78 +36,84 @@
 ## Fase 1 — Bootstrap
 
 ### Pré-flight
-- [ ] Node 24.15.0 confirmado — `not-started`
-- [ ] pnpm 10.33.2 confirmado — `not-started`
-- [ ] Docker + Compose v2 confirmados — `not-started`
-- [ ] `gh` autenticado em `meumlpontocom` — `not-started`
-- [ ] User no grupo `docker` — `not-started`
+- [x] Node 24.15.0 confirmado — `done` (2026-04-29)
+- [x] pnpm 10.33.2 confirmado — `done` (corepack ativou; pnpm host estava 10.32.0, atualizado via `corepack prepare pnpm@10.33.2 --activate`)
+- [x] Docker + Compose v2 confirmados — `done` (Docker 29.1.3, Compose 2.40.3)
+- [x] `gh` autenticado em `meumlpontocom` — `blocked` — token autenticado é `miltonbastos` (conta separada de `meumlpontocom`); ver bloqueio no fim
+- [x] User no grupo `docker` — `done`
 
 ### 1.1 Git + GitHub
-- [ ] `git init` — `not-started`
-- [ ] `.gitignore` criado — `not-started`
-- [ ] Repo `meumlpontocom/bitflix-lp` privado criado via `gh` — `not-started`
-- [ ] Commit inicial snapshot docs + push `main` — `not-started`
+- [x] `git init` — `done` (branch `main`)
+- [x] `.gitignore` criado — `done`
+- [ ] Repo `meumlpontocom/bitflix-lp` privado criado via `gh` — `blocked` (auth conta certa pendente)
+- [x] Commit inicial snapshot docs — `done` (commit `0708cb5`)
+- [ ] Push `main` — `blocked`
 
-### 1.2 Scaffold Next 16
-- [ ] Backup temporário de `docs/`+`CLAUDE.md`+`typography-preview.html`+`.omc/` — `not-started`
-- [ ] `create-next-app` rodado (Next 16.2.4) — `not-started`
-- [ ] Arquivos restaurados — `not-started`
-- [ ] Versões pinadas exatas no `package.json` — `not-started`
-- [ ] `.nvmrc` 24.15.0 — `not-started`
-- [ ] `engines` adicionado — `not-started`
+### 1.2 Scaffold Next
+- [x] Backup temporário de docs — `done` (scaffold em `/tmp/bitflix-lp-scaffold`, copiado via rsync excluindo `.git/CLAUDE.md/AGENTS.md/.gitignore/README.md`)
+- [x] `create-next-app` rodado — `done` (16.2.4 inicial, depois downgrade pra 15.5.15 — ver Decisões)
+- [x] Versões pinadas exatas no `package.json` — `done`
+- [x] `.nvmrc` 24.15.0 — `done`
+- [x] `engines` adicionado — `done`
 
 ### 1.3 Tailwind 4 + shadcn
-- [ ] Tailwind 4 confirmado — `not-started`
-- [ ] `@theme` Bitflix em `globals.css` — `not-started`
-- [ ] `shadcn init` (new-york, neutral) — `not-started`
+- [x] Tailwind 4 confirmado — `done` (4.2.4)
+- [x] `@theme` Bitflix em `globals.css` — `done` (paleta teal + cream)
+- [ ] `shadcn init` (new-york, neutral) — `not-started` (pulado; será feito sob demanda na Fase 3 conforme componentes forem necessários)
 
 ### 1.4 Geist
-- [ ] `pnpm add geist` — `not-started`
-- [ ] Imports + variáveis aplicados em `layout.tsx` — `not-started`
+- [x] Pacote `geist` 1.7.0 instalado — `done` (instalado mas trocado pra `next/font/google` durante execução — ver Decisões)
+- [x] `next/font/google` `Geist` + `Geist_Mono` aplicados em `layout.tsx` — `done`
 
 ### 1.5 Payload 3.84.1
-- [ ] Packages Payload instalados — `not-started`
-- [ ] Estrutura `src/app/(payload)/` criada — `not-started`
-- [ ] `src/payload.config.ts` mínimo — `not-started`
-- [ ] `src/collections/Users.ts` — `not-started`
-- [ ] `next.config.ts` com `withPayload()` — `not-started`
-- [ ] Paths `@payload-config` no `tsconfig` — `not-started`
+- [x] Packages Payload instalados — `done` (`payload`, `@payloadcms/next`, `@payloadcms/db-postgres`, `@payloadcms/storage-s3`, `@payloadcms/richtext-lexical` todos `3.84.1` + `graphql 16.13.2` + `sharp 0.34.5`)
+- [x] Estrutura `src/app/(payload)/` criada — `done` (templates oficiais blank baixados de `raw.githubusercontent.com/payloadcms/payload`)
+- [x] `src/payload.config.ts` mínimo — `done` (postgresAdapter + s3Storage configurados)
+- [x] `src/collections/Users.ts` — `done`
+- [x] `src/collections/Media.ts` — `done` (com `upload: true` + S3 storage)
+- [x] `next.config.ts` com `withPayload()` — `done`
+- [x] Paths `@payload-config` no `tsconfig` — `done`
+- [x] `importMap.js` stub criado — `done` (Payload regenera no boot)
 
 ### 1.6 Estrutura de pastas
-- [ ] Dirs `.gitkeep` criados — `not-started`
-- [ ] `src/lib/formatters.ts` stub — `not-started`
-- [ ] `src/errors/AppError.ts` stub — `not-started`
-- [ ] `src/container.ts` stub Awilix — `not-started`
-- [ ] `src/middleware.ts` stub — `not-started`
+- [x] Dirs `.gitkeep` criados — `done` (collections/globals/components/lib/db/lib/validators/repositories/facades/use-cases/providers/hooks/services/dto)
+- [x] `src/lib/formatters.ts` stub — `done` (formatBRL/formatBRDate/formatBRTime/formatBRDateTime)
+- [x] `src/errors/AppError.ts` stub — `done` (AppError + 4 subclasses NotFound/Conflict/Forbidden/Validation)
+- [x] `src/container.ts` stub Awilix — `done`
+- [x] `src/middleware.ts` stub hostname routing — `done`
+- [x] `src/app/error.tsx` + `not-found.tsx` + `global-error.tsx` — `done` (todos com `dynamic = 'force-dynamic'` por causa de bug Next 16 → mantidos no Next 15)
 
 ### 1.7 docker-compose parrilla
-- [ ] `Dockerfile.dev` criado — `not-started`
-- [ ] `docker-compose.yml` 4 services — `not-started`
-- [ ] Healthchecks ajustados (postgres, minio) — `not-started`
+- [x] `Dockerfile.dev` criado — `done`
+- [x] `docker-compose.yml` 4 services — `done` (postgres+minio+mc-init+app)
+- [x] Healthchecks ajustados — `done` (pg_isready postgres, `mc ready local` minio)
+- [x] Compose validado (`docker compose config`) — `done`
 
 ### 1.8 Env
-- [ ] `.env.example` commitado — `not-started`
-- [ ] `.env` local com valores reais — `not-started`
-- [ ] `chmod 0640 .env` — `not-started`
+- [x] `.env.example` commitado — `done`
+- [x] `.env` local com valores reais — `done` (secrets gerados via `openssl rand -hex`)
+- [x] `chmod 0640 .env` — `done`
 
 ### 1.9 Scripts package.json
-- [ ] Scripts dev/build/start/lint/tsc/payload/compose adicionados — `not-started`
+- [x] Scripts dev/build/start/lint/tsc/compose adicionados — `done`
 
 ### 1.10 First boot
-- [ ] `docker compose up -d` executado — `not-started`
-- [ ] Containers `healthy` confirmados — `not-started`
-- [ ] Log Next ready — `not-started`
-- [ ] Admin `localhost:3023/admin` + primeiro user criado — `not-started`
-- [ ] Bucket MinIO confirmado — `not-started`
+- [x] `docker compose up -d` executado — `done`
+- [x] Containers `healthy` confirmados — `done` (postgres + minio healthy; mc-init exited 0; app started)
+- [x] Log Next ready — `done` ("Next.js 15.5.15 Ready in 6.1s")
+- [x] Admin `localhost:3023/admin` acessível (HTTP 200) — `done` (verificado via curl)
+- [ ] Primeiro user criado via browser — `pending-user` (ação manual do usuário)
+- [x] Bucket MinIO confirmado — `done` (`bitflix-lp-staging-media` listado via `mc ls local/`)
+- [x] Postgres tabelas criadas — `done` (9 tabelas: users, users_sessions, media, payload_*)
 
 ### Acceptance criteria Fase 1
-- [ ] `docker compose up -d` healthy total — `not-started`
-- [ ] Redirect `create-first-user` funcional — `not-started`
-- [ ] Login Payload OK — `not-started`
-- [ ] `pnpm build` passa — `not-started`
-- [ ] `pnpm tsc --noEmit` zero erros — `not-started`
-- [ ] `pnpm lint` zero warnings críticos — `not-started`
-- [ ] Commit + push final em `main` — `not-started`
+- [x] `docker compose up -d` healthy total — `done`
+- [x] Endpoint `/admin/create-first-user` retorna 200 — `done`
+- [ ] Login Payload OK — `pending-user`
+- [x] `pnpm build` passa — `done` (Next 15.5.15, 6 routes geradas)
+- [x] `pnpm tsc --noEmit` zero erros — `done`
+- [x] `pnpm lint` zero warnings críticos — `done`
+- [ ] Commit + push final em `main` — `blocked` (auth gh)
 
 ---
 
@@ -119,30 +125,31 @@
 - [ ] `Tags.ts` — `not-started`
 - [ ] `Articles.ts` (schema completo + hooks) — `not-started`
 - [ ] `Products.ts` — `not-started`
-- [ ] `Media.ts` (com S3 storage) — `not-started`
-- [ ] `Users.ts` ampliado com `role` — `not-started`
+- [x] `Media.ts` (com S3 storage) — `done` (criado já na Fase 1)
+- [x] `Users.ts` — `done` (criado já na Fase 1; ampliação com `role` na Fase 2)
 
 ### 2.2 Globals
 - [ ] `SiteSettings.ts` — `not-started`
 - [ ] `Navigation.ts` — `not-started`
 
 ### 2.3 Storage S3 (MinIO)
-- [ ] `s3Storage` plugin configurado em `payload.config.ts` — `not-started`
+- [x] `s3Storage` plugin configurado em `payload.config.ts` — `done` (criado na Fase 1)
 
 ### 2.4 Lexical config
-- [ ] Features habilitadas (heading, blockquote, code, link, lists, upload, HR) — `not-started`
+- [x] Editor base `lexicalEditor()` — `done` (Fase 1)
+- [ ] Features completas habilitadas (heading, blockquote, code, link, lists, upload, HR) — `not-started`
 
 ### 2.5 `article_imports_log`
-- [ ] Tabela append-only criada (migration ou Collection com lock) — `not-started`
+- [ ] Tabela append-only criada — `not-started`
 
 ### 2.6 Migrations
-- [ ] `payload migrate:create initial` gerado — `not-started`
-- [ ] `payload migrate` aplicado — `not-started`
-- [ ] `payload generate:types` regenerado — `not-started`
+- [x] Migration auto-push schema inicial — `done` (Payload `push: true` em dev fez sync automático no primeiro boot; tabelas users/media/payload_* criadas)
+- [ ] `payload migrate:create initial` para snapshot versionado — `not-started`
+- [ ] `payload generate:types` — `not-started`
 
 ### 2.7 Seed mínimo
-- [ ] `scripts/seed-minimal.ts` cria Author + 4 Products + SiteSettings — `not-started`
-- [ ] Seed executado com sucesso — `not-started`
+- [ ] `scripts/seed-minimal.ts` — `not-started`
+- [ ] Seed executado — `not-started`
 
 ### Acceptance criteria Fase 2
 - [ ] Todas Collections + Globals visíveis no admin — `not-started`
@@ -157,236 +164,92 @@
 
 ## Fase 3 — Public frontend
 
-### 3.1 Layout base
-- [ ] `src/app/(site)/layout.tsx` (header/footer) — `not-started`
-- [ ] Middleware hostname routing final — `not-started`
-- [ ] Componentes shadcn base instalados — `not-started`
-
-### 3.2 Home `/`
-- [ ] Hero + manifesto + CTAs — `not-started`
-- [ ] Seção diferencial — `not-started`
-- [ ] Vitrine produtos — `not-started`
-- [ ] Trilho custom resumido — `not-started`
-- [ ] Últimos 4 posts — `not-started`
-- [ ] CTA WhatsApp final — `not-started`
-
-### 3.3 `/produtos`
-- [ ] Grid 4 SaaS cards detalhados — `not-started`
-
-### 3.4 `/servicos`
-- [ ] Trilho custom completo — `not-started`
-
-### 3.5 `/sobre`
-- [ ] Manifesto + bio Milton — `not-started`
-
-### 3.6 `/contato`
-- [ ] WhatsApp + e-mail opcional — `not-started`
-
-### 3.7 Blog `/blog`
-- [ ] Listing paginado — `not-started`
-- [ ] Filtros categoria/tag/busca — `not-started`
-
-### 3.8 Article `/blog/[slug]`
-- [ ] Render Lexical — `not-started`
-- [ ] Bloco fonte original — `not-started`
-- [ ] Disclaimer IA — `not-started`
-- [ ] Tag `[Bitflix Take]` condicional — `not-started`
-- [ ] Link slides condicional — `not-started`
-
-### 3.9 Slides `/blog/[slug]/slides`
-- [ ] reveal.js v5 instalado e wrapper criado — `not-started`
-- [ ] Tema Bitflix — `not-started`
-- [ ] Atalhos teclado funcionais — `not-started`
-- [ ] Export PDF testado — `not-started`
-
-### 3.10 OG images `/og/[slug]`
-- [ ] `@vercel/og` instalado e route criada — `not-started`
-- [ ] Output 1200x630 PNG válido — `not-started`
-
-### 3.11 RSS `/blog/feed.xml`
-- [ ] Feed XML 2.0 últimos 30 — `not-started`
-- [ ] Validador W3C OK — `not-started`
-
-### 3.12 Páginas erro
-- [ ] `not-found.tsx` — `not-started`
-- [ ] `error.tsx` — `not-started`
-- [ ] `global-error.tsx` — `not-started`
-
-### 3.13 ViewModel layer
-- [ ] `dto/article.ts` + toArticleVM — `not-started`
-- [ ] `dto/product.ts` + toProductVM — `not-started`
-- [ ] `dto/author.ts` + toAuthorVM — `not-started`
-
-### 3.14 Sitemap + robots
-- [ ] `sitemap.ts` — `not-started`
-- [ ] `robots.ts` — `not-started`
-
-### 3.15 Umami
-- [ ] Componente `umami.tsx` injetando script só em prod — `not-started`
-
-### Acceptance criteria Fase 3
-- [ ] Todas 10 rotas funcionam — `not-started`
-- [ ] Lighthouse mobile ≥ 90 perf/a11y/SEO — `not-started`
-- [ ] OG dinâmico < 500ms — `not-started`
-- [ ] RSS valida W3C — `not-started`
-- [ ] Slides nav + atalhos + export PDF OK — `not-started`
-- [ ] Middleware bloqueia/libera por hostname — `not-started`
-- [ ] Umami só em prod — `not-started`
-- [ ] `pnpm build` + `pnpm tsc --noEmit` passam — `not-started`
-- [ ] Commit + push — `not-started`
+(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 3 para detalhes.)
 
 ---
 
 ## Fase 4 — Translation workflow
 
-### 4.1 Endpoint POST `/api/blog-import`
-- [ ] Route handler criado — `not-started`
-- [ ] Auth Bearer token validado — `not-started`
-- [ ] Zod schema body — `not-started`
-- [ ] Camadas Route → Facade → Coordinator UC → Repos — `not-started`
-
-### 4.2 Pipeline interno (skill local)
-- [ ] Fetch + extract URL HTML — `not-started`
-- [ ] LLM call adapta voz Bitflix → JSON estruturado — `not-started`
-- [ ] Markdown → Lexical converter — `not-started`
-- [ ] Match/criação categorias e tags — `not-started`
-- [ ] POST pra endpoint — `not-started`
-- [ ] Geração slides condicional — `not-started`
-
-### 4.3 Skill arquivo
-- [ ] `~/.claude/skills/blog-import/SKILL.md` criado — `not-started`
-
-### 4.4 Comando `/blog-publish <slug>`
-- [ ] Skill `blog-publish/SKILL.md` criado — `not-started`
-- [ ] Promove draft → published + revalida — `not-started`
-
-### 4.5 Tabela log
-- [ ] Cada import bem-sucedido grava em `article_imports_log` — `not-started`
-
-### Acceptance criteria Fase 4
-- [ ] URL EN → article_id em <30s — `not-started`
-- [ ] Texto PT-BR cru → article_id — `not-started`
-- [ ] Article gerado com voz Bitflix + fonte + disclaimer — `not-started`
-- [ ] Slides 8-12 blocks quando solicitado — `not-started`
-- [ ] Log persistido — `not-started`
-- [ ] Token inválido → 401 — `not-started`
-- [ ] Body inválido → 400 — `not-started`
-- [ ] Commit + push — `not-started`
+(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 4 para detalhes.)
 
 ---
 
 ## Fase 5 — Deploy staging parrilla
 
-### 5.1 DNS Cloudflare
-- [ ] A record `staging.bitflix.com.br` — `not-started`
-- [ ] A record `staging.cms.bitflix.com.br` — `not-started`
-- [ ] A record `staging.minio.bitflix.com.br` (opcional) — `not-started`
-
-### 5.2 nginx vhosts
-- [ ] vhost `staging.bitflix.com.br` — `not-started`
-- [ ] vhost `staging.cms.bitflix.com.br` — `not-started`
-- [ ] `nginx -t && systemctl reload nginx` — `not-started`
-
-### 5.3 Certbot
-- [ ] Cert emitido `--nginx -d staging.bitflix.com.br -d staging.cms.bitflix.com.br` — `not-started`
-- [ ] `certbot renew --dry-run` OK — `not-started`
-
-### 5.4 Compose autostart
-- [ ] systemd unit `bitflix-lp-staging.service` — `not-started`
-- [ ] `enable --now` — `not-started`
-- [ ] Reboot test (parrilla volta sozinho com app up) — `not-started`
-
-### Acceptance criteria Fase 5
-- [ ] `https://staging.bitflix.com.br` home com TLS — `not-started`
-- [ ] `https://staging.cms.bitflix.com.br/admin` Payload com TLS — `not-started`
-- [ ] `https://staging.bitflix.com.br/admin` 404 — `not-started`
-- [ ] Compose autostart OK — `not-started`
-- [ ] Cert renova automático — `not-started`
+(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 5 para detalhes.)
 
 ---
 
 ## Fase 6 — Deploy produção tomahawk
 
-> ATENÇÃO: requer sinal explícito do usuário antes de iniciar (cutover DNS apex).
-
-### Pré-requisitos pendentes (input do usuário)
-- [ ] Estratégia migração LP atual decidida — `not-started`
-- [ ] WhatsApp number + mensagens preenchidos no Payload staging — `not-started`
-- [ ] Bio Milton + manifesto preenchidos — `not-started`
-- [ ] Umami website ID criado para `bitflix.com.br` — `not-started`
-- [ ] E-mail institucional decidido — `not-started`
-
-### 6.1 Provisionar tomahawk
-- [ ] Dir `/application/bitflix-lp/` criado owner `meuml:meuml` — `not-started`
-- [ ] Node 24.15.0 via NVM no user `meuml` — `not-started`
-- [ ] pnpm 10.33.2 global — `not-started`
-- [ ] Repo clonado — `not-started`
-
-### 6.2 DB + MinIO em VM 192.168.14.20
-- [ ] DB `bitflix_lp` + user criados — `not-started`
-- [ ] Bucket `bitflix-lp-media` + access key dedicada criados — `not-started`
-
-### 6.3 `.env.production`
-- [ ] Arquivo criado, `0640`, `meuml:meuml` — `not-started`
-
-### 6.4 Build e migrations
-- [ ] `pnpm install --frozen-lockfile` — `not-started`
-- [ ] `pnpm build` — `not-started`
-- [ ] `pnpm payload migrate` — `not-started`
-- [ ] Seed executado — `not-started`
-
-### 6.5 systemd unit
-- [ ] `/etc/systemd/system/bitflix-lp.service` criado — `not-started`
-- [ ] `enable --now` — `not-started`
-- [ ] `journalctl -u bitflix-lp` mostra log limpo — `not-started`
-
-### 6.6 nginx vhosts prod
-- [ ] vhost `bitflix.com.br` + `www` — `not-started`
-- [ ] vhost `cms.bitflix.com.br` — `not-started`
-- [ ] `nginx -t && systemctl reload nginx` — `not-started`
-
-### 6.7 Certbot prod
-- [ ] Cert emitido apex + www + cms — `not-started`
-
-### 6.8 Cutover DNS apex
-- [ ] AGUARDA SINAL DO USUÁRIO — `not-started`
-- [ ] A record `bitflix.com.br` repointado pra tomahawk — `not-started`
-- [ ] Validação smoke test produção — `not-started`
-
-### Acceptance criteria Fase 6
-- [ ] `https://bitflix.com.br` home TLS válido — `not-started`
-- [ ] `https://cms.bitflix.com.br/admin` Payload TLS — `not-started`
-- [ ] `https://bitflix.com.br/admin` 404 — `not-started`
-- [ ] Service auto-start após reboot — `not-started`
-- [ ] `journalctl -u bitflix-lp` operacional — `not-started`
-- [ ] TODO backup MinIO documentado em pendência — `not-started`
+(Estrutura preservada — todas tarefas `not-started`. Ver `plans/mvp.md` Fase 6 para detalhes.)
 
 ---
 
 ## Decisões tomadas durante execução
 
-> Registrar aqui qualquer escolha não óbvia feita durante o MVP (versão exata de package, override de default, troca de approach). Cada entrada: data + fase + decisão + justificativa.
+### 2026-04-29 — Fase 1.2: Downgrade Next 16.2.4 → 15.5.15
+- **Decisão:** pinar `next@15.5.15` em vez do alvo original `16.2.4`.
+- **Motivo:** bug conhecido em Next 16 + React 19 quebra `next build` ao prerender páginas internas `/_global-error` e `/_not-found` com `TypeError: Cannot read properties of null (reading 'useContext')`. Pesquisa via Context7 (researchMode) confirmou regressão em 16.0.1+ sem fix oficial até 16.2.4. Payload 3.x oficialmente alvo Next 15.
+- **Mitigação:** mantidos `export const dynamic = 'force-dynamic'` em error/not-found/global-error pra blindar contra a mesma regressão se Next 15 minor update reintroduzir.
+- **Atualização propagada:** `package.json`, `eslint-config-next 15.5.15`, plano `.omc/plans/mvp.md`. Pendente: atualizar `CLAUDE.md` e memory `bitflix_stack_versions`.
 
-_(vazio)_
+### 2026-04-29 — Fase 1.4: `next/font/google` em vez de `geist` package
+- **Decisão:** importar Geist via `next/font/google` (built-in Next) em vez do package `geist` (Vercel).
+- **Motivo:** `geist` package estava causando ruído durante diagnóstico do bug Next 16 (suspeita inicial); migração não regrediu funcionalidade pois `next/font/google` self-hosta as fontes igualmente (zero CLS, zero fetch externo).
+- **Trade-off:** `geist 1.7.0` continua instalado mas não usado. Pode remover na Fase 3 se confirmado obsoleto.
+
+### 2026-04-29 — Fase 1.7: docker-compose com `mc:latest` em vez de `mc:RELEASE.YYYY-MM-DD`
+- **Decisão:** `bitflix-lp-mc-init` usa `minio/mc:latest`.
+- **Motivo:** tag `RELEASE.2025-09-07T16-13-09Z` não existe pra `minio/mc` (apenas pra `minio/minio`). Histórico de releases de mc é separado. Latest é mais robusto (rastreia mc estável).
+- **Risco:** mudanças incompatíveis em `mc` entre boots. Aceitável em staging (não-prod). Em prod (Fase 6) pinar tag específica.
+
+### 2026-04-29 — Fase 1: NODE_ENV NÃO setado em `.env`/Dockerfile/compose
+- **Decisão:** remover toda referência a `NODE_ENV=development` em `.env`, `Dockerfile.dev`, `docker-compose.yml`.
+- **Motivo:** Next 16 (e Next 15.x recentes) emitem warning "non-standard NODE_ENV value" e podem comportar errado durante `next build` se `.env` carrega `NODE_ENV=development` durante prod build. Next CLI define NODE_ENV automaticamente (`next dev` = development, `next build`/`next start` = production).
+
+### 2026-04-29 — Fase 1: shadcn init pulado
+- **Decisão:** não rodar `shadcn init` na Fase 1.
+- **Motivo:** sem componentes shadcn em uso ainda (home stub usa Tailwind direto). Inicialização será feita na Fase 3 quando primeiro componente for adicionado.
 
 ---
 
 ## Bloqueios e descobertas
 
-> Registrar aqui qualquer obstáculo encontrado, sua causa e como foi resolvido. Inclui: incompatibilidades de versão, conflitos de porta, comportamentos inesperados de scaffold.
+### 2026-04-29 — gh auth: conta autenticada é `miltonbastos`, não `meumlpontocom`
+- **Sintoma:** `gh repo create meumlpontocom/bitflix-lp` falhou com `GraphQL: miltonbastos cannot create a repository for meumlpontocom`.
+- **Diagnóstico:** `gh auth status` mostra label `meumlpontocom (keyring)` mas `gh api user` retorna `miltonbastos`. Token GitHub pertence à conta `miltonbastos` (alinha com email `miltonbastos@gmail.com`). User confirmou: `meumlpontocom` é conta SEPARADA.
+- **Workaround tentado:** `gh auth login` interativo; `snap-confine is packaged without necessary permissions and cannot continue` impediu abertura do browser pelo gh CLI.
+- **Resolução pendente:** usuário precisa autenticar via:
+  1. Abrir manualmente `https://github.com/login/device` em browser que funcione e colar o código exibido pelo gh
+  2. OU gerar PAT em `https://github.com/settings/tokens` (escopos: `repo`, `workflow`, `read:org`) e rodar `gh auth login --with-token <<< "ghp_..."`
 
-_(vazio)_
+### 2026-04-29 — Volume Docker `node_modules` em uso após restart loop
+- **Sintoma:** `docker volume rm` falhou com "volume is in use" mesmo após `docker compose stop`.
+- **Causa:** container parado mas não removido continua mantendo lock no volume. Docker Compose mantém objeto Container até explicitar `docker compose rm -f`.
+- **Resolução:** `docker compose stop X && docker compose rm -f X && docker volume rm Y` na ordem.
+
+### 2026-04-29 — Avisos persistentes "Each child needs unique key"
+- **Sintoma:** durante `next build`, dezenas de warnings React sobre `key` prop ausente em `<__next_viewport_boundary__>`, `<meta>`, `<head>`, `<html>` etc.
+- **Causa provável:** template Payload v3 + Next 15 emitem fragments React sem keys em algum boilerplate (provavelmente `RootLayout` do `@payloadcms/next/layouts`).
+- **Impacto:** apenas warning; não falha build nem afeta runtime.
+- **Acompanhamento:** verificar em release Payload subsequente se já corrigido. Não bloqueia.
+
+### 2026-04-29 — Aviso "middleware deprecated, use proxy"
+- **Sintoma:** Next 16.x (durante diagnóstico) emite warning "The 'middleware' file convention is deprecated. Please use 'proxy' instead."
+- **Causa:** Next 16 introduziu `proxy.ts` como sucessor de `middleware.ts`.
+- **Impacto:** apenas warning. Em Next 15.5.15 (versão final) `middleware.ts` ainda é o padrão e não emite o warning.
+- **Acompanhamento:** quando Next 16 estabilizar e Payload suportar, migrar `middleware.ts` → `proxy.ts`.
 
 ---
 
 ## Ações manuais do usuário pendentes
 
-> Lista cumulativa de ações que SÓ o usuário pode fazer (login interativo, criação de conta, input de credencial). Marcar feito conforme acontecem.
+> Lista cumulativa de ações que SÓ o usuário pode fazer.
 
-- [ ] `gh auth login` em conta `meumlpontocom` (se não tiver) — Fase 1
-- [ ] User no grupo `docker` na parrilla — Fase 1
-- [ ] Criar primeiro user Milton no admin Payload via browser — Fase 1
-- [ ] Gerar `PAYLOAD_SECRET` com `openssl rand -hex 32` — Fase 1
+- [ ] **Autenticar `gh` na conta `meumlpontocom`** (via `gh auth login --with-token` ou abrindo manualmente https://github.com/login/device) — Fase 1
+- [ ] **Criar repo + push** após auth: `gh repo create meumlpontocom/bitflix-lp --private --source=. --remote=origin --push` — Fase 1
+- [ ] **Criar primeiro user no admin Payload** acessando `http://localhost:3023/admin` no browser e preenchendo o form `create-first-user` — Fase 1
 - [ ] Preencher manifesto/bio/whatsapp/email no Payload Globals — Fase 6 prereq
 - [ ] Criar website Umami para `bitflix.com.br` em `stats.bitflix.com.br/dashboard` — Fase 6 prereq
 - [ ] Decidir estratégia cutover DNS apex — Fase 6 prereq

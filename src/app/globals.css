@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #2d2d2d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Bitflix paleta — extraída do logo (teal). */
+  --color-bitflix-50: #00a0a0;
+  --color-bitflix-500: #008090;
+  --color-bitflix-700: #006070;
+  --color-bitflix-800: #005060;
+  --color-bitflix-900: #003030;
+  --color-bitflix-text: #2d2d2d;
+  --color-bitflix-cream: #f8ead7;
+  --color-bitflix-cream-light: #fbf1e1;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

@@ -1,0 +1,43 @@
+{
+  "name": "bitflix-lp",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24.15.0",
+    "pnpm": ">=10.33.2"
+  },
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint",
+    "tsc": "tsc --noEmit",
+    "compose:up": "docker compose up -d",
+    "compose:down": "docker compose down",
+    "compose:logs": "docker compose logs -f bitflix-lp-app"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.84.1",
+    "@payloadcms/next": "3.84.1",
+    "@payloadcms/richtext-lexical": "3.84.1",
+    "@payloadcms/storage-s3": "3.84.1",
+    "geist": "1.7.0",
+    "graphql": "16.13.2",
+    "next": "15.5.15",
+    "payload": "3.84.1",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "sharp": "0.34.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.5",
+    "@tailwindcss/postcss": "4.2.4",
+    "@types/node": "24.12.2",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "15.5.15",
+    "tailwindcss": "4.2.4",
+    "typescript": "5.9.3"
+  }
+}

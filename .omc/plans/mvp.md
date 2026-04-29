@@ -45,13 +45,14 @@ Sair do greenfield (só docs) até primeira boot com Next 16 + Payload 3 + Postg
 - Commit inicial só com `docs/` + `CLAUDE.md` + `typography-preview.html` + `.omc/` (snapshot "estado documentação")
 - Push pra `main`
 
-#### 1.2 Scaffold Next 16
-- Mover `docs/`, `CLAUDE.md`, `typography-preview.html`, `.omc/` pra `/tmp/bitflix-backup/` temporariamente (create-next-app exige dir vazio)
-- `pnpm create next-app@16.2.4 . --typescript --tailwind --app --eslint --src-dir --import-alias "@/*"`
-- Restaurar arquivos backupeados de volta
+#### 1.2 Scaffold Next
+- Scaffold em `/tmp/bitflix-lp-scaffold` (cria-next-app exige dir vazio) e copiar para projeto via rsync excluindo `.git/`, `CLAUDE.md`, `.gitignore`, `AGENTS.md`, `README.md`.
+- `pnpm create next-app@15.5.15` ou usar scaffold do 16.2.4 e fazer downgrade depois (foi feito assim na execução real — ver progress, decisão sobre Next 15.5.15).
 - Pinar versões exatas no `package.json` (substituir `^` por valores fixos):
-  - `next: "16.2.4"`, `react: "19.2.5"`, `react-dom: "19.2.5"`
+  - `next: "15.5.15"` (downgrade do alvo original 16.2.4 — bug Next 16 + React 19 quebra prerender de `_global-error`/`_not-found` com `useContext null`)
+  - `react: "19.2.5"`, `react-dom: "19.2.5"`
   - `typescript: "5.9.3"`, `tailwindcss: "4.2.4"`
+  - `eslint-config-next: "15.5.15"`
 - `.nvmrc` com `24.15.0`
 - `engines` no `package.json`: `{ "node": ">=24.15.0", "pnpm": ">=10.33.2" }`
 

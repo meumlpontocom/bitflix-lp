@@ -1,0 +1,25 @@
+FROM node:24.15-bookworm-slim
+
+# pnpm via corepack (vem com Node 24)
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+
+# Sharp + Lexical podem precisar de libs nativas
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Cache de instalação isolado
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Source vai por bind mount em dev — copia inicial só pra primeira boot funcionar
+# se alguém rodar sem mount.
+COPY . .
+
+EXPOSE 3000
+
+CMD ["pnpm", "dev"]

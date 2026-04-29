@@ -10,7 +10,7 @@
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 16.2.4 (App Router) + React 19.2.5 |
+| Framework | Next.js 15.5.15 (App Router) + React 19.2.5 — alvo original 16.2.4, downgrade 2026-04-29 (regressão Next 16 + React 19 quebra prerender; ver `.omc/progress/mvp.md` Decisões) |
 | Runtime | Node 24.15.0 LTS |
 | Database | PostgreSQL 17.5 (em VM externa `192.168.14.20`) |
 | ORM | Drizzle 0.45.2 (Payload usa internamente também) |
