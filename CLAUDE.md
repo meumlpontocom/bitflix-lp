@@ -4,17 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**MVP staging done.** Fases 1-5 concluídas em 2026-04-29. Pós-MVP em 2026-04-30: split `NEXT_PUBLIC_SITE_URL`/`PAYLOAD_PUBLIC_SERVER_URL`, code blocks terminal-style com botão Copiar no blog, e todas as 5 páginas estáticas (home/produtos/servicos/sobre/contato) editáveis via Payload admin sob grupo "Pages". Site rodando em `https://staging.bitflix.com.br` + `https://staging.cms.bitflix.com.br/admin`. Próximo passo: refinar copy via admin + Lighthouse + decidir cutover DNS apex. Deploy produção em plano separado (`.omc/plans/prod-deploy.md`), roda só após sinal explícito.
+**MVP staging done.** Fases 1-5 concluídas em 2026-04-29. Pós-MVP em 2026-04-30: split `NEXT_PUBLIC_SITE_URL`/`PAYLOAD_PUBLIC_SERVER_URL`, code blocks terminal-style com botão Copiar no blog, e todas as 5 páginas estáticas (home/produtos/servicos/sobre/contato) editáveis via Payload admin sob grupo "Pages". Site rodando em `https://staging.bitflix.com.br` + `https://staging.cms.bitflix.com.br/admin`.
+
+**Deploy prod em execução (iniciado 2026-04-30).** Sinal explícito do user dado. Arquitetura prod fechada: compose tomahawk (app + MinIO) + Postgres externo na VM `192.168.14.20:6432`. DNS Cloudflare `cms.bitflix.com.br` + `www.bitflix.com.br` + `minio.cms.bitflix.com.br` apontando `184.171.240.212`; apex `@` fica por último (cutover final). Artefatos gerados: `Dockerfile.prod`, `docker-compose.prod.yml`, `.env.production.example`, `infra/prod/{bitflix.com.br,cms.bitflix.com.br,minio.cms.bitflix.com.br}.conf` + `bitflix-lp-prod.service`. Runbook copy-paste em `docs/INFRA.md` seção 8 (8.1 → 8.12). Estado em `.omc/progress/prod-deploy.md`. Próximo passo: user executa runbook 8.3+ no tomahawk (Node+pnpm+clone+`.env`+compose up+migrate+nginx+certbot+systemd+cutover apex).
 
 Antes de qualquer trabalho:
 
 1. Leia `~/.engineering-standards/STANDARDS.md` (universal Bitflix).
 2. Leia `docs/CONVENTIONS.md` (overrides do projeto + folder structure + checklist de review).
 3. Leia `docs/PROJECT_SPEC.md` (produto, marca, editorial, schema Article).
-4. Leia `docs/INFRA.md` (servidor, deploy, ambientes, secrets).
+4. Leia `docs/INFRA.md` (servidor, deploy, ambientes, secrets) — seção 8 = runbook prod.
 5. Leia `.omc/plans/mvp.md` (plano MVP staging — Fases 1-5; contrato).
-6. Leia `.omc/plans/prod-deploy.md` (plano deploy prod — só relevante quando for deployar).
-7. Leia `.omc/progress/mvp.md` (estado atual de execução, decisões e bloqueios).
+6. Leia `.omc/plans/prod-deploy.md` (plano deploy prod — relevante agora).
+7. Leia `.omc/progress/mvp.md` (estado MVP staging — done).
+8. Leia `.omc/progress/prod-deploy.md` (estado prod deploy — em execução).
 
 Sessão nova começa fria mas com tudo persistido. Identifique próximo passo `not-started`/`in-progress` no progress file e siga.
 

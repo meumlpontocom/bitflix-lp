@@ -1,0 +1,48 @@
+# Multi-stage prod build para Bitflix LP
+# Build interno requer DATABASE_URI + PAYLOAD_SECRET via build-args (passa via docker-compose.prod.yml).
+# generateStaticParams em /blog/[slug] hita o DB no build, por isso DATABASE_URI tem que estar acessível.
+
+FROM node:24.15-bookworm-slim AS deps
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+ARG DATABASE_URI
+ARG PAYLOAD_SECRET
+ENV DATABASE_URI=${DATABASE_URI}
+ENV PAYLOAD_SECRET=${PAYLOAD_SECRET}
+ENV NODE_ENV=production
+RUN pnpm build
+
+FROM node:24.15-bookworm-slim AS runner
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
+EXPOSE 3000
+
+CMD ["pnpm", "start"]

@@ -219,23 +219,310 @@ Acceptance Fase 5 completa quando os 4 testes passarem + reboot da parrilla traz
 
 ---
 
-## 8. Deploy prod (plano dedicado em `.omc/plans/prod-deploy.md`)
+## 8. Deploy prod tomahawk — runbook
 
-Plano provisório:
-1. Criar user `deploy` (ou usar `meuml`) com chave SSH dedicada, sem senha.
-2. GitHub Actions workflow: on push to `main`, faz SSH para tomahawk, `git pull` em `/application/bitflix-lp`, `pnpm install`, `pnpm build`, `systemctl restart bitflix-lp`.
-3. systemd unit `/etc/systemd/system/bitflix-lp.service`:
-   ```ini
-   [Service]
-   Type=simple
-   User=meuml
-   WorkingDirectory=/application/bitflix-lp
-   EnvironmentFile=/application/bitflix-lp/.env.production
-   ExecStart=/home/meuml/.nvm/versions/node/v24.15.0/bin/node node_modules/.bin/next start -p 3060
-   Restart=always
-   RestartSec=5
+Arquitetura prod: app + MinIO em compose (`docker-compose.prod.yml`), Postgres externo (`192.168.14.20:6432`), nginx + certbot no host, systemd autostart compose.
+
+Artefatos prontos no repo:
+- `Dockerfile.prod` — multi-stage build (deps → builder → runner)
+- `docker-compose.prod.yml` — services `bitflix-lp-prod-{minio,mc-init,app}`
+- `infra/prod/bitflix.com.br.conf` — vhost site público (apex + www)
+- `infra/prod/cms.bitflix.com.br.conf` — vhost admin Payload
+- `infra/prod/minio.cms.bitflix.com.br.conf` — vhost MinIO console
+- `infra/prod/bitflix-lp-prod.service` — systemd unit autostart compose
+- `.env.production.example` — template
+
+### 8.1 DNS Cloudflare (manual no painel)
+
+Criar A records (DNS only, sem proxy/CDN). Apex `@` por último (cutover final):
+
+| Tipo | Nome | Conteúdo | Proxy | Quando |
+|------|------|----------|-------|--------|
+| A | `cms` | `184.171.240.212` | DNS only | AGORA |
+| A | `www` | `184.171.240.212` | DNS only | AGORA |
+| A | `minio.cms` | `184.171.240.212` | DNS only | AGORA |
+| A | `@` (apex `bitflix.com.br`) | `184.171.240.212` | DNS only | DEPOIS — passo 8.10 |
+
+Validar (esperar até 5 min de propagação):
+```bash
+dig +short cms.bitflix.com.br A @1.1.1.1
+dig +short www.bitflix.com.br A @1.1.1.1
+dig +short minio.cms.bitflix.com.br A @1.1.1.1
+# Todos devem retornar 184.171.240.212
+```
+
+### 8.2 Provisionar Postgres na VM 192.168.14.20
+
+Conectar como superuser e criar DB+user. Senha forte gerada externamente (`openssl rand -hex 24`).
+
+```sql
+-- psql -h 192.168.14.20 -p 6432 -U postgres
+CREATE DATABASE bitflix_lp_prod
+  WITH ENCODING = 'UTF8'
+       LC_COLLATE = 'C.UTF-8'
+       LC_CTYPE = 'C.UTF-8'
+       TEMPLATE = template0;
+
+CREATE USER bitflix_lp_prod WITH PASSWORD '<HEX_GERADO>';
+
+GRANT ALL PRIVILEGES ON DATABASE bitflix_lp_prod TO bitflix_lp_prod;
+
+\c bitflix_lp_prod
+GRANT ALL ON SCHEMA public TO bitflix_lp_prod;
+ALTER SCHEMA public OWNER TO bitflix_lp_prod;
+\q
+```
+
+`pg_hba.conf` da VM precisa permitir conexão do tomahawk (`184.171.240.212`):
+```
+host bitflix_lp_prod bitflix_lp_prod 184.171.240.212/32 scram-sha-256
+```
+Após editar: `sudo systemctl reload postgresql` na VM.
+
+Validar do tomahawk:
+```bash
+PGPASSWORD='<HEX>' psql -h 192.168.14.20 -p 6432 -U bitflix_lp_prod -d bitflix_lp_prod -c '\dt'
+# Deve listar 0 tabelas sem erro de auth.
+```
+
+### 8.3 Tomahawk: usuário, Node, pnpm
+
+Como root no tomahawk:
+```bash
+# Path padrão dos apps
+mkdir -p /application
+chown meuml:meuml /application
+```
+
+Como `meuml`:
+```bash
+# Node 24 LTS via NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+source ~/.bashrc
+nvm install 24.15.0
+nvm alias default 24.15.0
+nvm use 24.15.0
+
+# pnpm 10.33.2 via corepack (vem com Node 24)
+corepack enable
+corepack prepare pnpm@10.33.2 --activate
+
+# Validar
+node --version   # v24.15.0
+pnpm --version   # 10.33.2
+docker --version # já instalado, validar versão
+```
+
+### 8.4 Clonar repo
+
+Como `meuml`:
+```bash
+cd /application
+git clone https://github.com/meumlpontocom/bitflix-lp.git
+cd bitflix-lp
+```
+
+Se SSH key configurada: `git clone git@github.com:meumlpontocom/bitflix-lp.git`.
+
+### 8.5 Configurar `.env.production`
+
+```bash
+cd /application/bitflix-lp
+cp .env.production.example .env.production
+chmod 0640 .env.production
+chown meuml:meuml .env.production
+```
+
+Editar `.env.production` e preencher os secrets (`nano` ou editor de escolha):
+```bash
+# Gerar valores faltantes:
+echo "PAYLOAD_SECRET=$(openssl rand -hex 32)"
+echo "MINIO_ROOT_PASSWORD=$(openssl rand -hex 24)"
+echo "S3_SECRET_KEY=$(openssl rand -hex 24)"
+echo "BLOG_IMPORT_TOKEN=$(openssl rand -hex 32)"
+```
+
+Os campos:
+- `DATABASE_URI` — pré-preenchido com placeholders; substituir pelo URI real (host/porta/senha)
+- `PAYLOAD_SECRET` — `openssl rand -hex 32` (acima)
+- `MINIO_ROOT_PASSWORD` — `openssl rand -hex 24` (acima); `MINIO_ROOT_USER` deixa `minio_root`
+- `S3_SECRET_KEY` — `openssl rand -hex 24` (acima); `S3_ACCESS_KEY` deixa `bitflix_lp_app`
+- `BLOG_IMPORT_TOKEN` — `openssl rand -hex 32` (acima)
+- `UMAMI_WEBSITE_ID` — copiar do `stats.bitflix.com.br/dashboard` (criar website pra `bitflix.com.br` se ainda não existe)
+- `LLM_API_KEY` — opcional (skill `/blog-import` no host claude usa, server prod não precisa)
+
+### 8.6 Subir compose prod
+
+```bash
+cd /application/bitflix-lp
+
+# Adicionar meuml ao grupo docker (se não estiver)
+sudo usermod -aG docker meuml
+newgrp docker
+
+# Build + up. Pode levar 3-5 min na primeira vez (pnpm install + next build).
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+
+# Logs
+docker compose --env-file .env.production -f docker-compose.prod.yml logs -f bitflix-lp-prod-app
+```
+
+Esperar log `Next.js 15.5.15 Ready in Xs` e `Started server on 0.0.0.0:3000`. Container deve aparecer healthy.
+
+Validar:
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml ps
+# Esperar: bitflix-lp-prod-app + bitflix-lp-prod-minio com status "Up"
+# bitflix-lp-prod-mc-init exited(0) (one-shot OK)
+
+curl -I http://127.0.0.1:3060
+# Esperar 200 com Server: Next.js
+```
+
+### 8.7 Migrations + seed
+
+Container app já fez build (`pnpm build`). Em prod, schema é aplicado via `payload migrate` (não auto-push).
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T bitflix-lp-prod-app pnpm payload migrate
+# Esperar: "Migration applied" (snapshot 20260429_220628_initial)
+
+# Seed mínimo idempotente (Author Milton + 4 Products + Globals)
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T bitflix-lp-prod-app pnpm seed
+```
+
+### 8.8 nginx vhosts + certbot
+
+Como root:
+```bash
+cd /application/bitflix-lp
+
+# 1) Instala vhosts HTTP-only
+sudo cp infra/prod/bitflix.com.br.conf       /etc/nginx/sites-available/
+sudo cp infra/prod/cms.bitflix.com.br.conf   /etc/nginx/sites-available/
+sudo cp infra/prod/minio.cms.bitflix.com.br.conf /etc/nginx/sites-available/
+
+sudo ln -sf /etc/nginx/sites-available/bitflix.com.br.conf       /etc/nginx/sites-enabled/bitflix.com.br
+sudo ln -sf /etc/nginx/sites-available/cms.bitflix.com.br.conf   /etc/nginx/sites-enabled/cms.bitflix.com.br
+sudo ln -sf /etc/nginx/sites-available/minio.cms.bitflix.com.br.conf /etc/nginx/sites-enabled/minio.cms.bitflix.com.br
+
+# 2) Testa + reload (HTTP-only deve passar)
+sudo nginx -t
+sudo systemctl reload nginx
+
+# 3) Smoke HTTP antes do cert (ainda sem TLS)
+curl -I -H "Host: cms.bitflix.com.br" http://127.0.0.1
+curl -I -H "Host: minio.cms.bitflix.com.br" http://127.0.0.1
+# Esperar 200/302/403 (não 404). cms deve responder Payload admin.
+
+# 4) Emite certs Let's Encrypt + injeta SSL nos vhosts (modo --nginx)
+# IMPORTANTE: NÃO incluir bitflix.com.br/www aqui ainda — apex DNS ainda aponta pra LP antiga.
+sudo certbot --nginx \
+  -d cms.bitflix.com.br \
+  -d minio.cms.bitflix.com.br \
+  --non-interactive --agree-tos --redirect \
+  -m miltonbastos@gmail.com
+
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Validar TLS dos 2 hostnames já apontando:
+```bash
+curl -I https://cms.bitflix.com.br/admin               # 200, admin Payload
+curl -I https://minio.cms.bitflix.com.br               # 307 → /login (MinIO console)
+curl -I https://cms.bitflix.com.br/blog                # 404 (middleware bloqueia)
+```
+
+### 8.9 systemd autostart compose
+
+```bash
+sudo cp infra/prod/bitflix-lp-prod.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable bitflix-lp-prod.service
+
+# Validar (compose já está up; enable só ativa autostart no boot)
+sudo systemctl status bitflix-lp-prod.service
+```
+
+> ⚠️ **Após editar `.env.production`**, sempre `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --force-recreate bitflix-lp-prod-app`. `restart` NÃO recarrega env vars (mesmo bug do staging em 2026-04-29).
+
+### 8.10 Cutover DNS apex
+
+Quando passos 8.1–8.9 estiverem OK e admin/MinIO console acessíveis com TLS:
+
+1. Cloudflare painel → criar A record:
+
+   | Tipo | Nome | Conteúdo | Proxy |
+   |------|------|----------|-------|
+   | A | `@` | `184.171.240.212` | DNS only |
+
+   (Se já existe apontando pra LP antiga: editar pra `184.171.240.212`.)
+
+2. Aguardar propagação (Cloudflare TTL Auto = 5 min com DNS only):
+   ```bash
+   dig +short bitflix.com.br A @1.1.1.1
+   # Deve retornar 184.171.240.212
    ```
-4. nginx vhosts prod (`bitflix.com.br`, `www.bitflix.com.br`, `cms.bitflix.com.br`) com proxy_pass para `http://127.0.0.1:3060` + cert via certbot.
-5. Cutover DNS Cloudflare apex.
 
-Detalhes completos do deploy em `.omc/plans/prod-deploy.md`.
+3. Emitir cert pro apex + www:
+   ```bash
+   sudo certbot --nginx \
+     -d bitflix.com.br -d www.bitflix.com.br \
+     --non-interactive --agree-tos --redirect \
+     -m miltonbastos@gmail.com
+
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+4. Smoke final:
+   ```bash
+   curl -I https://bitflix.com.br                  # 200
+   curl -I https://www.bitflix.com.br              # 200 ou 301 → apex
+   curl -I https://bitflix.com.br/admin            # 404 (middleware)
+   curl -I https://bitflix.com.br/blog             # 200
+   curl -I https://bitflix.com.br/sitemap.xml      # 200
+   curl -I https://bitflix.com.br/blog/feed.xml    # 200
+   curl -I https://cms.bitflix.com.br/blog         # 404 (middleware)
+   curl -sI https://bitflix.com.br/og/test | head -5
+   ```
+
+5. Renovação automática de certs:
+   ```bash
+   sudo systemctl status certbot.timer
+   sudo certbot renew --dry-run
+   ```
+
+### 8.11 Acceptance criteria
+
+- [ ] DNS cms/www/minio.cms resolvem `184.171.240.212`
+- [ ] DB `bitflix_lp_prod` acessível do tomahawk (`pg_hba` liberado)
+- [ ] `docker compose ps` mostra app + minio Up + mc-init exit(0)
+- [ ] `pnpm payload migrate` aplicou migrations
+- [ ] `pnpm seed` rodou sem erro (4 Products + 7 Globals + Author Milton criados)
+- [ ] `https://cms.bitflix.com.br/admin` → 200 + login funciona
+- [ ] `https://minio.cms.bitflix.com.br` → console MinIO acessível
+- [ ] systemd `bitflix-lp-prod.service` enabled
+- [ ] DNS apex cutover OK
+- [ ] `https://bitflix.com.br/blog/<slug>` renderiza artigo
+- [ ] `https://bitflix.com.br/og/<slug>` retorna PNG
+- [ ] `https://bitflix.com.br/blog/feed.xml` válido (W3C)
+
+### 8.12 Operação dia-a-dia
+
+```bash
+# Logs
+docker compose --env-file .env.production -f docker-compose.prod.yml logs -f bitflix-lp-prod-app
+
+# Reload após mudança em .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --force-recreate bitflix-lp-prod-app
+
+# Deploy nova versão (após git pull)
+cd /application/bitflix-lp
+git pull origin main
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build bitflix-lp-prod-app
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T bitflix-lp-prod-app pnpm payload migrate
+```
+
+CI/CD (futuro): GitHub Actions workflow em push pra `main` → SSH tomahawk → `git pull` + rebuild compose. Deploy manual basta no MVP.

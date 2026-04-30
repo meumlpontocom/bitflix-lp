@@ -1,0 +1,19 @@
+[Unit]
+Description=Bitflix LP production compose (app + minio + mc-init)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/application/bitflix-lp
+User=meuml
+Group=meuml
+ExecStart=/usr/bin/docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+ExecStop=/usr/bin/docker compose --env-file .env.production -f docker-compose.prod.yml down
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

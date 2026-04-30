@@ -2,7 +2,27 @@
 
 > Plano dedicado de deploy do site em produção (tomahawk).
 > Extraído de `.omc/plans/mvp.md` em 2026-04-29 — separado do MVP staging.
+> Atualizado 2026-04-30: arquitetura prod = compose (app+MinIO) + Postgres externo. Runbook copy-paste detalhado em `docs/INFRA.md` seção 8. Estado de execução em `.omc/progress/prod-deploy.md`.
 > Estimativa: 1 dia útil (após pré-requisitos preenchidos e testes em staging finalizados).
+
+## Atualização 2026-04-30 — arquitetura final
+
+| Camada | Onde |
+|--------|------|
+| App Next + Payload | container docker (Dockerfile.prod multi-stage) no compose `bitflix-lp-prod` |
+| MinIO (object storage) | container docker mesmo compose (não na VM externa) |
+| Postgres | VM externa `192.168.14.20:6432` (DB `bitflix_lp_prod`) |
+| nginx + certbot | host tomahawk (vhosts em `infra/prod/*.conf`) |
+| systemd | unit oneshot autostart compose no boot (`infra/prod/bitflix-lp-prod.service`) |
+
+Subdomínios prod:
+- `bitflix.com.br` + `www.bitflix.com.br` → site público
+- `cms.bitflix.com.br` → admin Payload (mesmo container, middleware roteia)
+- `minio.cms.bitflix.com.br` → console MinIO (nginx proxy → 127.0.0.1:9001)
+
+DNS apex `@` é o ÚLTIMO passo (cutover). LP atual fica de pé até cert+app prontos no tomahawk.
+
+**O plano provisório original abaixo (passos 1-9) é resumo. Runbook executável completo em `docs/INFRA.md` seção 8 (subseções 8.1 a 8.12).**
 
 ---
 
