@@ -21,6 +21,8 @@ import { SiteSettings } from './globals/SiteSettings.ts'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const serverURL = process.env.PAYLOAD_PUBLIC_SERVER_URL || ''
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -31,6 +33,11 @@ export default buildConfig({
       titleSuffix: ' · Bitflix admin',
     },
   },
+  cors: {
+    origins: serverURL ? [serverURL] : [],
+    headers: ['authorization', 'content-type', 'x-bitflix-import-token'],
+  },
+  csrf: serverURL ? [serverURL] : [],
   collections: [
     Users,
     Authors,
@@ -44,7 +51,7 @@ export default buildConfig({
   globals: [SiteSettings, Navigation],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
-  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
+  serverURL,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },

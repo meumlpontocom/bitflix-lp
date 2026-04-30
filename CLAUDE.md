@@ -204,7 +204,10 @@ Detalhes em `docs/INFRA.md`.
 - Smoke test 4/4 OK: `staging.bitflix.com.br` → 200 site público, `staging.cms.bitflix.com.br/admin` → 200 admin, `/admin` no público → 404 middleware, `/blog` no cms → 404 middleware.
 - Acceptance único pendente: reboot test compose autostart (deferred — design idempotente, valida natural em próxima reboot).
 - URLs ativas: https://staging.bitflix.com.br + https://staging.cms.bitflix.com.br/admin.
-- **Quirk dev mode:** primeira request após boot pode retornar 500 transient (`__webpack_modules__[moduleId] is not a function` em chunks `@payloadcms/ui`/`richtext-lexical`). Próxima mesma request → 200. Detalhe em `.omc/progress/mvp.md` Bloqueios. Em prod (Fase 6, `next start` build) não acontece — só dev mode.
+- **Quirk dev mode:** primeira request após boot pode retornar 500 transient (`__webpack_modules__[moduleId] is not a function` em chunks `@payloadcms/ui`/`richtext-lexical`). Próxima mesma request → 200. Detalhe em `.omc/progress/mvp.md` Bloqueios. Em prod (`prod-deploy.md`, `next start` build) não acontece — só dev mode.
+- **CRÍTICO `.env` reload:** após editar `.env`, NUNCA usar `docker compose restart` — env vars ficam stale. Sempre `docker compose up -d --force-recreate bitflix-lp-app`. Confirmar com `docker compose exec -T bitflix-lp-app printenv PAYLOAD_PUBLIC_SERVER_URL`. Bug raiz que causou 403 em todos os saves do admin (CSRF rejeita Origin diferente do serverURL stale). Detalhes em progress.
+- **Layout root canônico Payload v3 + Next 15:** NÃO ter `src/app/layout.tsx`. Cada route group `(site)`/`(payload)` é seu próprio root layout (emite html+body). `error.tsx`/`not-found.tsx` ficam dentro do route group correto; `global-error.tsx` fica em `src/app/` (Next exige). Bitflix LP fez essa migração em 2026-04-29 após bug de dois `<html>` aninhados.
+- **Users `useSessions: false`:** sessions feature do Payload v3 exige sid em JWT validar contra `users_sessions` table. Mantido desabilitado pra simplicidade. Tabela `users_sessions` removida do DB.
 
 **Commits relevantes em `main`:**
 - `0708cb5` initial doc snapshot

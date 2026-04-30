@@ -9,7 +9,7 @@ const PUBLIC_HOSTNAMES = new Set(
   ['bitflix.com.br', 'www.bitflix.com.br', 'staging.bitflix.com.br'].filter(Boolean),
 )
 
-const ADMIN_ONLY_PATHS = ['/admin', '/api/payload', '/api/graphql', '/api/graphql-playground']
+const ADMIN_ONLY_PATHS = ['/admin', '/api']
 
 function isAdminPath(pathname: string) {
   return ADMIN_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))

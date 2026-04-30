@@ -193,6 +193,8 @@ sudo systemctl status certbot.timer
 sudo certbot renew --dry-run
 ```
 
+> ⚠️ **Após editar `.env`**, sempre `docker compose up -d --force-recreate bitflix-lp-app`. `docker compose restart` NÃO recarrega env vars (mantém vars antigas do compose initial). Confirmar com `docker compose exec -T bitflix-lp-app printenv PAYLOAD_PUBLIC_SERVER_URL`. Bug que causou 403 em todos os saves do admin em 2026-04-29.
+
 ### 7.3 systemd autostart compose
 
 ```bash
