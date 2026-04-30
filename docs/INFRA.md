@@ -381,17 +381,17 @@ curl -I http://127.0.0.1:3060
 # Esperar 200 com Server: Next.js
 ```
 
-### 8.7 Migrations + seed
+### 8.7 Seed inicial
 
-Container app já fez build (`pnpm build`). Em prod, schema é aplicado via `payload migrate` (não auto-push).
+Migrations rodam **automaticamente durante o build da imagem** (Dockerfile.prod step `RUN pnpm payload migrate` antes do `pnpm build`). Idempotente — re-runs em redeploys viram no-op.
+
+Após compose up, basta seed mínimo (Author Milton + 4 Products + Globals):
 
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml exec -T bitflix-lp-prod-app pnpm payload migrate
-# Esperar: "Migration applied" (snapshot 20260429_220628_initial)
-
-# Seed mínimo idempotente (Author Milton + 4 Products + Globals)
 docker compose --env-file .env.production -f docker-compose.prod.yml exec -T bitflix-lp-prod-app pnpm seed
 ```
+
+Re-rodar é seguro (`scripts/seed-minimal.ts` checa `find` antes de `create`).
 
 ### 8.8 nginx vhosts + certbot
 
@@ -501,7 +501,7 @@ Quando passos 8.1–8.9 estiverem OK e admin/MinIO console acessíveis com TLS:
 - [ ] DNS cms/www/minio.cms resolvem `184.171.240.212`
 - [ ] DB `bitflix_lp_prod` acessível do tomahawk (`pg_hba` liberado)
 - [ ] `docker compose ps` mostra app + minio Up + mc-init exit(0)
-- [ ] `pnpm payload migrate` aplicou migrations
+- [ ] Build da imagem rodou `pnpm payload migrate` sem erro (visivel no log do build)
 - [ ] `pnpm seed` rodou sem erro (4 Products + 7 Globals + Author Milton criados)
 - [ ] `https://cms.bitflix.com.br/admin` → 200 + login funciona
 - [ ] `https://minio.cms.bitflix.com.br` → console MinIO acessível
@@ -520,11 +520,10 @@ docker compose --env-file .env.production -f docker-compose.prod.yml logs -f bit
 # Reload após mudança em .env.production
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --force-recreate bitflix-lp-prod-app
 
-# Deploy nova versão (após git pull)
+# Deploy nova versão (após git pull) — migrate roda durante o build da imagem
 cd /application/bitflix-lp
 git pull origin main
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build bitflix-lp-prod-app
-docker compose --env-file .env.production -f docker-compose.prod.yml exec -T bitflix-lp-prod-app pnpm payload migrate
 ```
 
 CI/CD (futuro): GitHub Actions workflow em push pra `main` → SSH tomahawk → `git pull` + rebuild compose. Deploy manual basta no MVP.

@@ -21,6 +21,10 @@ ARG PAYLOAD_SECRET
 ENV DATABASE_URI=${DATABASE_URI}
 ENV PAYLOAD_SECRET=${PAYLOAD_SECRET}
 ENV NODE_ENV=production
+# Aplica migrations ANTES do build pra schema existir quando next build prerendar
+# rotas que tocam Payload Local API (generateStaticParams, /blog/feed.xml,
+# sitemap, etc). Idempotente: re-runs viram no-op se snapshot ja aplicado.
+RUN pnpm payload migrate
 RUN pnpm build
 
 FROM node:24.15-bookworm-slim AS runner

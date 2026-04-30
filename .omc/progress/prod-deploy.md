@@ -29,7 +29,7 @@
 | 8.4 | Clonar repo em /application/bitflix-lp | not-started |
 | 8.5 | Configurar .env.production | not-started |
 | 8.6 | Subir compose prod (build + up) | not-started |
-| 8.7 | Migrations + seed | not-started |
+| 8.7 | Seed (migrations agora rodam no build da imagem) | not-started |
 | 8.8 | nginx vhosts + certbot (cms + minio.cms) | not-started |
 | 8.9 | systemd autostart compose | not-started |
 | 8.10 | Cutover DNS apex (`@` + cert apex/www) | not-started |
