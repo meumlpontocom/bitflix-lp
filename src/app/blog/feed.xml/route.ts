@@ -3,7 +3,7 @@ import { getRecentArticlesForFeed } from '@/services/articles.service'
 export const runtime = 'nodejs'
 export const revalidate = 3600
 
-const SITE_URL = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? 'https://bitflix.com.br'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://bitflix.com.br'
 
 function escapeXml(str: string): string {
   return str

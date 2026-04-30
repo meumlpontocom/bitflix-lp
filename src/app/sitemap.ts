@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getAllPublishedArticleSlugs } from '@/services/articles.service'
 
-const SITE_URL = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? 'https://bitflix.com.br'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://bitflix.com.br'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slugs = await getAllPublishedArticleSlugs()

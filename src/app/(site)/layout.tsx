@@ -25,8 +25,8 @@ export const metadata: Metadata = {
   },
   description:
     'Bitflix é uma dev house brasileira que constrói software para entregar IA ao cliente final. SaaS prontos e projetos sob demanda.',
-  metadataBase: process.env.PAYLOAD_PUBLIC_SERVER_URL
-    ? new URL(process.env.PAYLOAD_PUBLIC_SERVER_URL)
+  metadataBase: process.env.NEXT_PUBLIC_SITE_URL
+    ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
     : undefined,
 }
 
