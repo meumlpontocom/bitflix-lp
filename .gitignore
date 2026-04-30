@@ -44,3 +44,7 @@ next-env.d.ts
 
 # Drizzle
 drizzle/migrations/sql/*.sql.bak
+
+# Restore SQL temporario (contem hash de senha admin — NUNCA commitar)
+restore-prod-globals.sql
+*.restore.sql
