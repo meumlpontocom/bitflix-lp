@@ -121,6 +121,24 @@ export async function getAllPublishedArticleSlugs(): Promise<{ slug: string; upd
   return result.docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt }))
 }
 
+// Build-phase safe variant: tolera schema inexistente (deploy inicial antes de
+// `payload migrate`). Apenas Postgres error 42P01 (undefined_table) cai pra []
+// silencioso; demais erros propagam pra nao mascarar bugs.
+export async function getAllPublishedArticleSlugsForBuild(): Promise<{ slug: string; updatedAt: string }[]> {
+  try {
+    return await getAllPublishedArticleSlugs()
+  } catch (err: unknown) {
+    const cause = (err as { cause?: { code?: string } })?.cause
+    if (cause?.code === '42P01') {
+      console.warn(
+        '[articles.service] articles table does not exist yet — returning empty slug list (build before migrations)',
+      )
+      return []
+    }
+    throw err
+  }
+}
+
 export async function getRecentArticlesForFeed(limit = 30): Promise<ArticleDetailVM[]> {
   const payload = await getPayload()
   const result = await payload.find({

@@ -8,7 +8,7 @@ import { ArticleSource } from '@/components/blog/article-source'
 import { ArticleDisclaimer } from '@/components/blog/disclaimer'
 import { RenderLexical, lexicalToPlainText } from '@/components/lexical/render-lexical'
 import { WhatsAppButton } from '@/components/cta/whatsapp-button'
-import { getArticleBySlug, getAllPublishedArticleSlugs } from '@/services/articles.service'
+import { getArticleBySlug, getAllPublishedArticleSlugsForBuild } from '@/services/articles.service'
 import { getSiteSettings } from '@/services/site.service'
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  const slugs = await getAllPublishedArticleSlugs()
+  const slugs = await getAllPublishedArticleSlugsForBuild()
   return slugs.map(({ slug }) => ({ slug }))
 }
 
