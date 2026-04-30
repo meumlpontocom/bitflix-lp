@@ -12,6 +12,8 @@ import { getHomePage } from '@/services/pages.service'
 import { getIcon } from '@/lib/icon-map'
 import { ROUTES } from '@/lib/constants/routes'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const [products, latestPosts, settings, page] = await Promise.all([
     listProducts(),

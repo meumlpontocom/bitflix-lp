@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Adaptações editoriais Bitflix sobre IA aplicada ao cliente final.',
 }
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 interface Props {
   searchParams: Promise<{

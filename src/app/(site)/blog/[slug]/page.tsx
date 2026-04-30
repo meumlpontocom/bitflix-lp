@@ -15,6 +15,8 @@ interface Props {
   params: Promise<{ slug: string }>
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function generateStaticParams() {
   const slugs = await getAllPublishedArticleSlugsForBuild()
   return slugs.map(({ slug }) => ({ slug }))

@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: 'SaaS Bitflix com IA embarcada para o cliente final.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProdutosPage() {
   const [products, settings, page] = await Promise.all([
     listProducts(),

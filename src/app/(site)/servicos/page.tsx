@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: 'Projetos personalizados Bitflix: IA aplicada para médias e grandes empresas.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function ServicosPage() {
   const [settings, page] = await Promise.all([getSiteSettings(), getServicosPage()])
 
