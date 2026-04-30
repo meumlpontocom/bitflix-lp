@@ -129,8 +129,13 @@ src/
   collections/                               # Payload Collections (imports relativos com .ts)
     Users.ts Authors.ts Articles.ts Categories.ts Tags.ts Products.ts Media.ts ArticleImportsLog.ts
   globals/
-    SiteSettings.ts
-    Navigation.ts
+    SiteSettings.ts                          # WhatsApp, manifesto, umami, email
+    Navigation.ts                            # menu header + footer
+    HomePage.ts                              # conteúdo editorial / (hero, pillars, sections, CTAs)
+    ProdutosPage.ts                          # conteúdo editorial /produtos
+    ServicosPage.ts                          # conteúdo editorial /servicos (project_types, process, stack)
+    SobrePage.ts                             # conteúdo editorial /sobre
+    ContatoPage.ts                           # conteúdo editorial /contato
   facades/
     blog/
       blog-import.facade.ts                  # cria Article draft (parseOrThrow + AppError)
@@ -154,7 +159,8 @@ src/
     authors.service.ts
     categories.service.ts
     products.service.ts
-    site.service.ts
+    site.service.ts                          # SiteSettings + Navigation
+    pages.service.ts                         # 5 page globals (Home/Produtos/Servicos/Sobre/Contato)
   components/
     ui/                                      # shadcn (button, card, badge, separator, sheet)
     layout/
@@ -168,6 +174,7 @@ src/
       category-filter.tsx
       pagination.tsx
       slide-deck.tsx                         # client component reveal.js wrapper
+      code-block-terminal.tsx                # client component (terminal style + copy button) p/ code blocks Lexical
     products/
       product-card.tsx
     cta/
@@ -180,12 +187,14 @@ src/
       umami.tsx
   dto/                                       # ViewModels (UI nunca consome Article entity Payload)
     article.ts product.ts author.ts site.ts
+    pages.ts                                 # VMs das 5 page globals + IconName enum
   lib/
     payload.ts                               # getPayload singleton helper
     formatters.ts                            # BR (R$, datas, horários)
     slugify.ts
     utils.ts                                 # cn() (tailwind-merge + clsx)
     whatsapp.ts                              # buildWhatsAppUrl helper
+    icon-map.ts                              # Lucide icon resolver (enum string → componente)
     auth/
       blog-import-token.ts                   # verify Bearer + constant-time + fingerprint
     constants/
@@ -280,7 +289,8 @@ Tudo que diverge do STANDARDS.md:
 - `NODE_ENV`
 - `DATABASE_URI` — Postgres connection string
 - `PAYLOAD_SECRET` — chave HMAC interna Payload
-- `PAYLOAD_PUBLIC_SERVER_URL` — URL pública do site/admin
+- `PAYLOAD_PUBLIC_SERVER_URL` — URL do **CMS / admin Payload**. Usada por Payload em CSRF allowlist + cors + admin URL emitido no payload de import. Em prod: `https://cms.bitflix.com.br`. Em staging: `https://staging.cms.bitflix.com.br`.
+- `NEXT_PUBLIC_SITE_URL` — URL do **site público**. Usada por `sitemap.xml`, `robots.txt`, `feed.xml`, `metadataBase` Open Graph. Em prod: `https://bitflix.com.br`. Em staging: `https://staging.bitflix.com.br`. SEPARADA de `PAYLOAD_PUBLIC_SERVER_URL` porque CMS e site público vivem em subdomínios diferentes — usar a mesma var fazia URLs públicas apontarem pro host CMS.
 - `S3_ENDPOINT` — MinIO endpoint
 - `S3_ACCESS_KEY` / `S3_SECRET_KEY` — MinIO credentials (escopo só ao bucket)
 - `S3_BUCKET` — `bitflix-lp-media` (prod) ou `bitflix-lp-staging-media` (staging)

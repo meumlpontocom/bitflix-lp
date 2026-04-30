@@ -2,7 +2,7 @@
 
 > Tracking de execução das 6 fases definidas em `.omc/plans/mvp.md`.
 > Criado: 2026-04-29.
-> Última atualização: 2026-04-29.
+> Última atualização: 2026-04-30.
 
 ---
 
@@ -323,6 +323,39 @@ Movido para `.omc/plans/prod-deploy.md` em 2026-04-29 a pedido do usuário. Roda
 
 ---
 
+## Pós-MVP — melhorias 2026-04-30
+
+Sessão de validação manual do staging gerou 3 melhorias pequenas mas relevantes:
+
+### 1. Split `NEXT_PUBLIC_SITE_URL` ↔ `PAYLOAD_PUBLIC_SERVER_URL`
+- **Bug:** `feed.xml`, `sitemap.xml`, `robots.txt`, `metadataBase` Open Graph estavam usando `PAYLOAD_PUBLIC_SERVER_URL` (host do CMS = `staging.cms.bitflix.com.br`) → URLs públicas no RSS apontavam pro host CMS errado.
+- **Fix:** novo env var `NEXT_PUBLIC_SITE_URL` dedicado ao site público. `PAYLOAD_PUBLIC_SERVER_URL` continua bound ao host CMS (CSRF/cors/admin URL).
+- **Arquivos:** `src/app/blog/feed.xml/route.ts`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/app/(site)/layout.tsx` (metadataBase), `.env`, `.env.example`, `docker-compose.yml`.
+- **Em prod:** `NEXT_PUBLIC_SITE_URL=https://bitflix.com.br` + `PAYLOAD_PUBLIC_SERVER_URL=https://cms.bitflix.com.br`.
+
+### 2. Code blocks terminal-style com botão Copiar (blog Lexical)
+- **Motivação:** artigos do blog que têm prompts/snippets ficavam com `<pre><code>` cru sem affordance de copiar.
+- **Solução:** componente client `src/components/blog/code-block-terminal.tsx` (header com 3 bolinhas mac, label da linguagem, botão Copiar↔Copiado com Lucide icons + clipboard API). Override de JSXConverter em `src/components/lexical/render-lexical.tsx` mapeando node `code` do Lexical → CodeBlockTerminal.
+- **Detalhe:** extractor `extractCodeText()` percorre children handling tanto `linebreak` nodes quanto `\n` em text node (Lexical pode armazenar de ambas formas).
+- **Validado** em artigo `gpt-5-5-prompt-engineering-openai` (32 code blocks renderizando OK).
+
+### 3. Todas as 5 páginas estáticas editáveis via Payload admin
+- **Motivação:** user perguntou se conteúdo da home era editável. Resposta era "parcial" (manifesto/whatsapp/produtos/menus sim, mas h1/pillars/CTAs hardcoded).
+- **Solução:** 5 Globals novos (`HomePage`, `ProdutosPage`, `ServicosPage`, `SobrePage`, `ContatoPage`) agrupados sob "Pages" no admin sidebar. Cada page.tsx refatorado pra ler do global via thin service + ViewModel.
+- **Arquitetura:** seguiu STANDARDS — UI consome VMs (em `src/dto/pages.ts`), service em `src/services/pages.service.ts`, icon mapper em `src/lib/icon-map.ts` (resolve enum string `Cpu`/`Layers`/etc → componente Lucide).
+- **Seed idempotente** (`scripts/seed-minimal.ts`): popula globals com conteúdo atual no primeiro `pnpm seed`. Re-rodar é seguro (checa key field antes de escrever).
+- **Editáveis agora:** todos os h1, sub-titles, eyebrows, pillars (icon+title+body), seções de produto/blog/CTA na home; project_types, process_steps, stack_items em /servicos; manifesto+author titles em /sobre; copy completa em /produtos e /contato.
+- **Override explícito:** `getPayload().findGlobal({ depth: 0 })` em `pages.service.ts` — sem relations a resolver, mais barato.
+
+### Quirks descobertos durante essas mudanças
+
+- **`pnpm build` polui `.next/` do dev server.** Containers volume `.next` é compartilhado. Após rodar `pnpm build` dentro do container dev, próximo request retorna 500 com `Cannot find module './vendor-chunks/<lib>.js'` (chunks de prod build em runtime de dev).
+  - **Fix:** `docker compose exec bitflix-lp-app sh -c 'rm -rf .next/*'` + `docker compose restart bitflix-lp-app` + warm-up curl.
+  - **Pra evitar:** rodar `pnpm build` em container separado / branch dedicada antes de prod, NÃO no compose dev.
+- **Bug intermitente cold-load `__webpack_modules__[moduleId] is not a function`** continua em vigor. Ocorre durante primeiras N requests após reciclar container, especialmente em rotas que usam `@payloadcms/ui` ou `@payloadcms/richtext-lexical`. Self-heal em ~5 retries de curl. Documentado em CLAUDE.md.
+
+---
+
 ## Decisões tomadas durante execução
 
 ### 2026-04-29 — Fase 1.2: Downgrade Next 16.2.4 → 15.5.15
@@ -468,10 +501,14 @@ Movido para `.omc/plans/prod-deploy.md` em 2026-04-29 a pedido do usuário. Roda
 - [x] **Criar primeiro user no admin Payload** — `done` 2026-04-29 (Milton Bastos, id=1)
 - [x] **Fase 5 — Cloudflare DNS**: criar A records `staging.bitflix.com.br` e `staging.cms.bitflix.com.br` → `45.182.133.84` — `done` 2026-04-29
 - [x] **Fase 5 — sudo na parrilla**: runbook `docs/INFRA.md` seção 7 executado com sucesso — `done` 2026-04-29
-- [ ] Testar staging manualmente: criar artigo no admin, importar via skill `/blog-import`, validar slides reveal.js, OG images, RSS, Lighthouse — pré-deploy prod
-- [ ] Preencher manifesto/bio/whatsapp/email no Payload Globals (`https://staging.cms.bitflix.com.br/admin/globals/site-settings`) — pré-deploy prod
+- [x] **Bio Milton Bastos** atualizada via admin (Authors) — `done` 2026-04-30
+- [x] **Validação manual blog**: artigo "harness-engineering" criado no admin + publicado + render OK — `done` 2026-04-30
+- [x] **Skill `/blog-import` validada end-to-end**: artigo OpenAI prompt-guidance importado, adaptado, code blocks terminal-style com botão copiar funcionando — `done` 2026-04-30
+- [ ] Preencher manifesto/whatsapp/email no Payload Globals (`https://staging.cms.bitflix.com.br/admin/globals/site-settings`) — pré-deploy prod
+- [ ] Editar conteúdo das 5 páginas via novos Globals "Pages" (home/produtos/servicos/sobre/contato) se quiser refinar copy — pré-deploy prod
 - [ ] Criar website Umami para `bitflix.com.br` em `stats.bitflix.com.br/dashboard` — pré-deploy prod
 - [ ] Decidir estratégia cutover DNS apex (substituição direta vs redirect 301) — pré-deploy prod
+- [ ] Validar Lighthouse mobile ≥ 90 + RSS validator W3C + slides reveal.js navegação completa — pré-deploy prod
 - [ ] Sinal explícito pra iniciar deploy prod (`.omc/plans/prod-deploy.md`)
 
 ---
@@ -485,6 +522,12 @@ Movido para `.omc/plans/prod-deploy.md` em 2026-04-29 a pedido do usuário. Roda
 | `5cb3f52` | importMap sync após primeiro boot Payload |
 | `8a277a9` | progress update Fase 1 done |
 | `35690bd` | Fase 2 modeling (21 files, 5090 lines) |
+| `736ab56` | Fase 3 public frontend (54 files, +7206 −468) |
+| `bbd082f` | Fase 4 translation workflow — endpoints blog-import + blog-publish |
+| `b9710b8` | Fase 5 deploy staging parrilla completo |
+| `13ea1fe` | fix staging admin save 403 + layout restructure + env reload |
+| `e371a84` | feat blog code block terminal-style + split SITE_URL from CMS_URL |
+| `3faf350` | feat CMS make all 5 site pages editable via Payload admin |
 
 Repo: https://github.com/meumlpontocom/bitflix-lp (privado).
 
