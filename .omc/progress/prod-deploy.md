@@ -117,7 +117,7 @@
 - [x] DNS Cloudflare: `cms`, `www`, `minio.cms` apontando `184.171.240.212` — done 2026-04-30
 - [x] Postgres VM: criar DB+user `bitflix_lp_prod` — done 2026-04-30 (user passou senha)
 - [x] pg_hba VM: liberar `184.171.240.212` — done 2026-04-30 (user confirmou)
-- [ ] Tomahawk: instalar Node 24 + pnpm 10 + git em user `meuml` — passo 8.3
+- [ ] Tomahawk: validar Docker + Compose + git + grupo docker (NÃO instalar Node/pnpm — build roda no container) — passo 8.3
 - [ ] Tomahawk: clonar repo em `/application/bitflix-lp/` — passo 8.4
 - [ ] Tomahawk: criar `.env.production` com secrets gerados — passo 8.5
 - [ ] Tomahawk: `docker compose build + up` — passo 8.6

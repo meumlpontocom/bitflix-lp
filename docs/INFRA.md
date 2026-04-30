@@ -285,33 +285,35 @@ PGPASSWORD='<HEX>' psql -h 192.168.14.20 -p 6432 -U bitflix_lp_prod -d bitflix_l
 # Deve listar 0 tabelas sem erro de auth.
 ```
 
-### 8.3 Tomahawk: usuário, Node, pnpm
+### 8.3 Tomahawk: validar requisitos do host
 
-Como root no tomahawk:
+**Host tomahawk NÃO precisa Node nem pnpm instalados.** Tudo roda dentro do container (Dockerfile.prod traz Node 24 + pnpm 10 isoladamente).
+
+Host só precisa: Docker + Compose v2 + git + user `meuml` no grupo docker. Tudo já existe per INFRA.md seção 3 — apenas validar:
+
 ```bash
-# Path padrão dos apps
-mkdir -p /application
-chown meuml:meuml /application
+# Como meuml (ou root)
+docker --version              # esperar Docker v24+ ou v29 (já existe)
+docker compose version        # esperar v2.x (já existe)
+git --version                 # qualquer versão recente
+groups meuml | grep docker    # esperar `docker` na lista
 ```
 
-Como `meuml`:
+Se `meuml` NÃO está no grupo docker:
 ```bash
-# Node 24 LTS via NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-source ~/.bashrc
-nvm install 24.15.0
-nvm alias default 24.15.0
-nvm use 24.15.0
-
-# pnpm 10.33.2 via corepack (vem com Node 24)
-corepack enable
-corepack prepare pnpm@10.33.2 --activate
-
-# Validar
-node --version   # v24.15.0
-pnpm --version   # 10.33.2
-docker --version # já instalado, validar versão
+sudo usermod -aG docker meuml
+# Logout + login (ou newgrp docker) pra grupo entrar em vigor
 ```
+
+Validar dir `/application` (path padrão dos apps tomahawk per INFRA.md seção 3):
+```bash
+ls -ld /application
+# Se não existe:
+sudo mkdir -p /application
+sudo chown meuml:meuml /application
+```
+
+> **NÃO instalar:** Node, NVM, pnpm. Build roda inteiramente dentro do container — host fica intocado. Outros apps no tomahawk (que usam Node 20 via NVM em `/root/.nvm`) continuam funcionando sem interferência.
 
 ### 8.4 Clonar repo
 
