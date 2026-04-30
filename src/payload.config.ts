@@ -17,6 +17,11 @@ import { Users } from './collections/Users.ts'
 
 import { Navigation } from './globals/Navigation.ts'
 import { SiteSettings } from './globals/SiteSettings.ts'
+import { HomePage } from './globals/HomePage.ts'
+import { ProdutosPage } from './globals/ProdutosPage.ts'
+import { ServicosPage } from './globals/ServicosPage.ts'
+import { SobrePage } from './globals/SobrePage.ts'
+import { ContatoPage } from './globals/ContatoPage.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -48,7 +53,15 @@ export default buildConfig({
     Media,
     ArticleImportsLog,
   ],
-  globals: [SiteSettings, Navigation],
+  globals: [
+    SiteSettings,
+    Navigation,
+    HomePage,
+    ProdutosPage,
+    ServicosPage,
+    SobrePage,
+    ContatoPage,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   serverURL,

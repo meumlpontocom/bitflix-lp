@@ -102,10 +102,20 @@ export interface Config {
   globals: {
     'site-settings': SiteSetting;
     navigation: Navigation;
+    'home-page': HomePage;
+    'produtos-page': ProdutosPage;
+    'servicos-page': ServicosPage;
+    'sobre-page': SobrePage;
+    'contato-page': ContatoPage;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'home-page': HomePageSelect<false> | HomePageSelect<true>;
+    'produtos-page': ProdutosPageSelect<false> | ProdutosPageSelect<true>;
+    'servicos-page': ServicosPageSelect<false> | ServicosPageSelect<true>;
+    'sobre-page': SobrePageSelect<false> | SobrePageSelect<true>;
+    'contato-page': ContatoPageSelect<false> | ContatoPageSelect<true>;
   };
   locale: null;
   widgets: {
@@ -795,6 +805,181 @@ export interface Navigation {
   createdAt?: string | null;
 }
 /**
+ * Conteudo editorial da home (/). Manifesto continua em Site Settings.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page".
+ */
+export interface HomePage {
+  id: number;
+  /**
+   * Texto antes da palavra destacada. Ex: "Software com IA"
+   */
+  hero_title_prefix: string;
+  /**
+   * Palavra(s) destacadas na cor teal. Ex: "embarcada"
+   */
+  hero_title_highlight: string;
+  /**
+   * Texto depois do destaque. Ex: "no cliente final."
+   */
+  hero_title_suffix: string;
+  hero_cta_primary_label: string;
+  hero_cta_secondary_label: string;
+  pillars_section_title: string;
+  pillars_section_body: string;
+  pillars?:
+    | {
+        icon:
+          | 'Cpu'
+          | 'Layers'
+          | 'Rocket'
+          | 'FlaskConical'
+          | 'Network'
+          | 'Cog'
+          | 'Shield'
+          | 'Zap'
+          | 'Sparkles'
+          | 'Code2';
+        title: string;
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  products_section_title: string;
+  products_section_body: string;
+  products_section_link_label: string;
+  custom_section_title: string;
+  custom_section_body: string;
+  custom_section_cta_label: string;
+  custom_section_whatsapp_label: string;
+  custom_section_aside_eyebrow: string;
+  custom_section_steps?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  blog_section_title: string;
+  blog_section_body: string;
+  blog_section_link_label: string;
+  final_cta_title: string;
+  final_cta_body: string;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Conteudo editorial de /produtos. Lista de produtos vem da collection Products.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "produtos-page".
+ */
+export interface ProdutosPage {
+  id: number;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  /**
+   * Texto exibido se nenhum produto cadastrado.
+   */
+  empty_state_label: string;
+  bottom_cta_title: string;
+  bottom_cta_body: string;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Conteudo editorial de /servicos.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "servicos-page".
+ */
+export interface ServicosPage {
+  id: number;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  hero_cta_label: string;
+  project_types_title: string;
+  project_types?:
+    | {
+        icon:
+          | 'FlaskConical'
+          | 'Network'
+          | 'Cog'
+          | 'Shield'
+          | 'Cpu'
+          | 'Layers'
+          | 'Rocket'
+          | 'Zap'
+          | 'Sparkles'
+          | 'Code2';
+        title: string;
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  process_title: string;
+  process_steps?:
+    | {
+        /**
+         * Ex: 01, 02, 03, 04
+         */
+        number: string;
+        title: string;
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  stack_title: string;
+  stack_intro: string;
+  stack_items?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  bottom_cta_title: string;
+  bottom_cta_body: string;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Conteudo editorial de /sobre. Manifesto continua em Site Settings.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sobre-page".
+ */
+export interface SobrePage {
+  id: number;
+  eyebrow: string;
+  title: string;
+  manifesto_section_title: string;
+  author_section_title: string;
+  /**
+   * Mostrado se Author nao tem bio preenchida.
+   */
+  author_bio_fallback: string;
+  final_cta_title: string;
+  final_cta_body: string;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Conteudo editorial de /contato. WhatsApp/email vem de Site Settings.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contato-page".
+ */
+export interface ContatoPage {
+  id: number;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings_select".
  */
@@ -837,6 +1022,133 @@ export interface NavigationSelect<T extends boolean = true> {
         external?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page_select".
+ */
+export interface HomePageSelect<T extends boolean = true> {
+  hero_title_prefix?: T;
+  hero_title_highlight?: T;
+  hero_title_suffix?: T;
+  hero_cta_primary_label?: T;
+  hero_cta_secondary_label?: T;
+  pillars_section_title?: T;
+  pillars_section_body?: T;
+  pillars?:
+    | T
+    | {
+        icon?: T;
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  products_section_title?: T;
+  products_section_body?: T;
+  products_section_link_label?: T;
+  custom_section_title?: T;
+  custom_section_body?: T;
+  custom_section_cta_label?: T;
+  custom_section_whatsapp_label?: T;
+  custom_section_aside_eyebrow?: T;
+  custom_section_steps?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  blog_section_title?: T;
+  blog_section_body?: T;
+  blog_section_link_label?: T;
+  final_cta_title?: T;
+  final_cta_body?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "produtos-page_select".
+ */
+export interface ProdutosPageSelect<T extends boolean = true> {
+  eyebrow?: T;
+  title?: T;
+  subtitle?: T;
+  empty_state_label?: T;
+  bottom_cta_title?: T;
+  bottom_cta_body?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "servicos-page_select".
+ */
+export interface ServicosPageSelect<T extends boolean = true> {
+  eyebrow?: T;
+  title?: T;
+  subtitle?: T;
+  hero_cta_label?: T;
+  project_types_title?: T;
+  project_types?:
+    | T
+    | {
+        icon?: T;
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  process_title?: T;
+  process_steps?:
+    | T
+    | {
+        number?: T;
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  stack_title?: T;
+  stack_intro?: T;
+  stack_items?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  bottom_cta_title?: T;
+  bottom_cta_body?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sobre-page_select".
+ */
+export interface SobrePageSelect<T extends boolean = true> {
+  eyebrow?: T;
+  title?: T;
+  manifesto_section_title?: T;
+  author_section_title?: T;
+  author_bio_fallback?: T;
+  final_cta_title?: T;
+  final_cta_body?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contato-page_select".
+ */
+export interface ContatoPageSelect<T extends boolean = true> {
+  eyebrow?: T;
+  title?: T;
+  subtitle?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
