@@ -8,9 +8,15 @@
 
 ## Status global
 
-**Status overall:** `in-progress` (artefatos gerados, runbook na seção 8 de INFRA.md, aguardando execução manual no tomahawk pelo user)
-**Próxima ação:** user executa runbook `docs/INFRA.md` seção 8.3 em diante (passos 8.1+8.2 já feitos paralelamente).
-**Antes de começar nova sessão:** ler CLAUDE.md "Toolchain quirks" + `docs/INFRA.md` seção 8.
+**Status overall:** `in-progress` (compose prod up + admin acessível via TLS; falta cutover DNS apex)
+**Próxima ação:** user faz cutover apex no Cloudflare quando estiver pronto pra desligar LP antiga (passo 8.10).
+**Antes de começar nova sessão:** ler CLAUDE.md "Toolchain quirks" + `docs/INFRA.md` seção 8 + este arquivo "Decisões durante execução".
+
+**URLs ativas:**
+- `https://cms.bitflix.com.br/admin` → 200 Payload admin TLS
+- `https://minio.cms.bitflix.com.br` → 200 MinIO console TLS
+- `https://cms.bitflix.com.br/blog` → 404 (middleware bloqueia)
+- `bitflix.com.br` apex → ainda LP antiga (cutover deferred)
 
 | Status | Significado |
 |--------|-------------|
@@ -24,16 +30,16 @@
 | Passo | Descrição | Status |
 |-------|-----------|--------|
 | 8.1 | DNS Cloudflare A records (cms/www/minio.cms) | done |
-| 8.2 | Postgres VM 192.168.14.20 — DB+user criados | done (user rodou SQL) |
-| 8.3 | Tomahawk: meuml + Node 24 + pnpm | not-started |
-| 8.4 | Clonar repo em /application/bitflix-lp | not-started |
-| 8.5 | Configurar .env.production | not-started |
-| 8.6 | Subir compose prod (build + up) | not-started |
-| 8.7 | Seed (migrations agora rodam no build da imagem) | not-started |
-| 8.8 | nginx vhosts + certbot (cms + minio.cms) | not-started |
-| 8.9 | systemd autostart compose | not-started |
-| 8.10 | Cutover DNS apex (`@` + cert apex/www) | not-started |
-| 8.11 | Acceptance criteria | not-started |
+| 8.2 | Postgres VM 192.168.14.20 — DB+user criados | done |
+| 8.3 | Tomahawk: validar Docker + Compose + git + grupo docker (zero instalação) | done |
+| 8.4 | Clonar repo em /application/bitflix-lp | done |
+| 8.5 | Configurar .env.production (secrets via openssl rand) | done |
+| 8.6 | Subir compose prod (build + up) — 3 fixes intermediários | done |
+| 8.7 | Seed + restore manual de Users/Authors/Globals do staging | done |
+| 8.8 | nginx vhosts + certbot (cms + minio.cms) | done |
+| 8.9 | systemd autostart compose | done |
+| 8.10 | Cutover DNS apex (`@` + cert apex/www) | not-started (deferred — LP antiga continua) |
+| 8.11 | Acceptance criteria | partial (cutover apex pendente) |
 
 ---
 
@@ -106,26 +112,54 @@
 
 ---
 
-## Bloqueios e descobertas
+## Bloqueios e descobertas durante execução
 
-(nenhum até agora — atualizar conforme execução)
+### 2026-04-30 — Build inicial falhou: 5 Globals novos sem migration snapshot
+- **Sintoma:** `pnpm build` no Dockerfile dava `error: relation "contato_page" does not exist` (code 42P01) ao prerenderar `/contato`, `/sobre` etc.
+- **Causa raiz:** schema inicial (`20260429_220628_initial.ts`) só cobre Fase 2 (8 collections + 2 globals iniciais). Os 5 page Globals novos pós-MVP (HomePage/ProdutosPage/ServicosPage/SobrePage/ContatoPage) foram adicionados em dev com `push: true` (auto-sync Drizzle) — nunca tiveram snapshot capturado. Em prod (push: false / migrate explícito), tabelas não existiam.
+- **Tentativa fracassada:** `pnpm payload migrate:create --name pages_globals` exige TTY interativo (drizzle-kit prompt sobre rename detection). `yes ""` + heredoc + `script -q` não passam pelo raw mode do prompt.
+- **Fix aplicado:** dump schema do staging via `pg_dump --schema-only -t home_page -t home_page_pillars ...` + `\d` pra cada tabela. Migration manual `src/migrations/20260430_pages_globals.ts` escrita à mão seguindo padrão do `20260429_220628_initial.ts`. Validada aplicando em DB scratch (`bitflix_lp_test_migration` → ambas migrations clean apply: 30ms+13ms).
+- **Lição:** Toda mudança de schema em dev precisa `pnpm payload migrate:create` ANTES do deploy prod. Senão dev/staging usam push: true e prod quebra. Manter `migrate:create` na rotina de PR depois de toda mudança em collections/globals.
+
+### 2026-04-30 — Build precisa migrate ANTES do next build
+- **Sintoma:** Mesmo com fix anterior, build falhou em `/blog/feed.xml` com 42P01 em `articles`.
+- **Causa raiz:** chicken-and-egg. Build prerenderiza várias rotas (sitemap, RSS, /blog list, etc) que hitam Payload Local API → Postgres. Mas migrations só rodavam APÓS build no runbook original (passo 8.7).
+- **Fix:** mover `RUN pnpm payload migrate` pra ANTES de `RUN pnpm build` no `Dockerfile.prod`. Idempotente — re-runs viram no-op se snapshot já aplicado.
+- **Bonus fix:** wrapper `getAllPublishedArticleSlugsForBuild` em `articles.service.ts` que silencia 42P01 e retorna `[]`. Defesa em profundidade caso build rode sem schema (deploy reset).
+
+### 2026-04-30 — Site público mostrava conteúdo do seed mesmo após admin editado
+- **Sintoma:** após restore de Globals do staging, admin mostrava textos refinados mas `cms.bitflix.com.br/admin` páginas de site (e teoricamente `bitflix.com.br` após cutover) continuariam com defaults do seed.
+- **Causa raiz:** páginas `(site)/*` viraram **static** no build (Server Components com `await getX()` mas sem indicador de dinamicidade). Next prerender + cacheado com `s-maxage=31536000` (1 ano).
+- **Fix:** `export const dynamic = 'force-dynamic'` em todas as 7 pages do `(site)`: home, produtos, servicos, sobre, contato, blog list, blog/[slug]. Trade-off: perde static optimization mas edits no admin viram visíveis na próxima request.
+- **Lição:** Site CMS-driven precisa pages dinâmicas por default. Sem admin webhook chamando `revalidatePath`, static render = conteúdo fossilizado.
+
+### 2026-04-30 — `bitflix-lp_users` não foi copiado no primeiro restore
+- **Sintoma:** ao acessar `/admin` em prod, redirect pra `create-first-user`. User Milton do staging não estava lá.
+- **Causa:** primeiro dump do staging só pegou Authors/Globals — não a tabela `users` (login admin). Authors ≠ Users (Authors = bylines blog; Users = login).
+- **Fix:** re-dump incluindo `-t users`. Restore SQL agora inclui hash bcrypt + salt do staging → login prod com mesma senha.
+
+### 2026-04-30 — `restore-prod-globals.sql` contém hash de senha admin
+- **Detalhe:** dump tem `users.hash` + `users.salt` (bcrypt). Não é plaintext mas **não pode ir pro repo público**.
+- **Mitigação:** `.gitignore` adicionou pattern `restore-prod-globals.sql` + `*.restore.sql`. Arquivo só vive em `/tmp` (parrilla) + `/tmp` (tomahawk). Apagar após uso.
 
 ---
 
 ## Ações manuais do usuário pendentes
 
 - [x] DNS Cloudflare: `cms`, `www`, `minio.cms` apontando `184.171.240.212` — done 2026-04-30
-- [x] Postgres VM: criar DB+user `bitflix_lp_prod` — done 2026-04-30 (user passou senha)
-- [x] pg_hba VM: liberar `184.171.240.212` — done 2026-04-30 (user confirmou)
-- [ ] Tomahawk: validar Docker + Compose + git + grupo docker (NÃO instalar Node/pnpm — build roda no container) — passo 8.3
-- [ ] Tomahawk: clonar repo em `/application/bitflix-lp/` — passo 8.4
-- [ ] Tomahawk: criar `.env.production` com secrets gerados — passo 8.5
-- [ ] Tomahawk: `docker compose build + up` — passo 8.6
-- [ ] Tomahawk: `payload migrate` + seed — passo 8.7
-- [ ] Tomahawk: nginx + certbot pra `cms` + `minio.cms` — passo 8.8
-- [ ] Tomahawk: enable systemd unit — passo 8.9
-- [ ] Cloudflare: criar/editar A record apex `@` → `184.171.240.212` (CUTOVER) — passo 8.10
-- [ ] Tomahawk: certbot pra apex + www — passo 8.10
+- [x] Postgres VM: criar DB+user `bitflix_lp_prod` — done 2026-04-30
+- [x] pg_hba VM: liberar `184.171.240.212` — done 2026-04-30
+- [x] Tomahawk: validar Docker + Compose + git + grupo docker — done 2026-04-30
+- [x] Tomahawk: clonar repo em `/application/bitflix-lp/` — done 2026-04-30
+- [x] Tomahawk: criar `.env.production` com secrets gerados — done 2026-04-30
+- [x] Tomahawk: `docker compose build + up` — done 2026-04-30 (após 3 fixes: pages_globals migration + migrate-before-build + getAllPublishedArticleSlugsForBuild)
+- [x] Tomahawk: seed + restore manual de Users/Authors/Globals do staging — done 2026-04-30
+- [x] Tomahawk: nginx + certbot pra `cms` + `minio.cms` — done 2026-04-30
+- [x] Tomahawk: enable systemd unit — done 2026-04-30 (reboot test deferred — design oneshot+RemainAfterExit já validado)
+- [x] Tomahawk: marcar pages (site) como `dynamic = 'force-dynamic'` + rebuild — done 2026-04-30
+- [ ] **Cloudflare: cutover A record apex `@` → `184.171.240.212`** (deferred — LP antiga continua rodando até user decidir desligar) — passo 8.10
+- [ ] **Tomahawk: certbot pra apex + www** (após cutover DNS) — passo 8.10
+- [ ] Apagar `/tmp/restore-prod-globals.sql` em parrilla + tomahawk (contém hash senha admin)
 - [ ] Smoke test final + acceptance criteria — passo 8.11
 
 ---
