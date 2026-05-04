@@ -46,6 +46,17 @@
 
 ## Contexto e decisões
 
+### Deploy 2026-05-04 — Github Awesome weekly #30
+
+- **Commit em produção:** `39f215e` (`feat: seed github awesome weekly catalog`).
+- **Deploy:** `git pull --ff-only origin main` em `/application/bitflix-lp` como `meuml` + `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build bitflix-lp-prod-app`.
+- **Migration:** nenhuma migration nova; `pnpm payload migrate` no build retornou `Done`.
+- **Build:** `next build` concluído com sucesso; imagem `bitflix-lp-prod-bitflix-lp-prod-app` recriada e container `bitflix-lp-prod-app` reiniciado.
+- **Conteúdo:** `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-githubawesome-weekly-30-catalog.ts` criou/atualizou 35 artigos publicados e 35 entradas publicadas do catálogo, lote `Github Awesome weekly #30`.
+- **Validação CMS/API:** `https://cms.bitflix.com.br/api/open-source-catalog-entries?limit=1` retornou `totalDocs: 36`; `discovery_batch_id.status = done`; `repos_found_count = 35`; `repos_imported_count = 35`.
+- **Smokes públicos:** `/blog/catalogo-open-source` → 200, `/blog/3dsvg-transforme-svgs-2d-em-componentes-3d-interativos` → 200, `/blog/sciwrite-skill-de-edicao-cientifica-baseada-em-writing-in-the-sciences` → 200, `/og/3dsvg-transforme-svgs-2d-em-componentes-3d-interativos?v=prod` → 200 PNG.
+- **Render verificado:** artigo 3dsvg em produção com headings `<h2>`, fonte original, disclaimer editorial e code block terminal-style com botão `Copiar`.
+
 ### Deploy 2026-05-04 — Catálogo open source + Ruflo
 
 - **Commit em produção:** `43a5abe` (`feat: add open source catalog`).
