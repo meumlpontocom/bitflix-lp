@@ -6,9 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **MVP staging done.** Fases 1-5 concluídas em 2026-04-29. Pós-MVP em 2026-04-30: split `NEXT_PUBLIC_SITE_URL`/`PAYLOAD_PUBLIC_SERVER_URL`, code blocks terminal-style com botão Copiar no blog, e todas as 5 páginas estáticas (home/produtos/servicos/sobre/contato) editáveis via Payload admin sob grupo "Pages". Site rodando em `https://staging.bitflix.com.br` + `https://staging.cms.bitflix.com.br/admin`.
 
-**Deploy prod ATIVO em tomahawk (2026-04-30).** Compose `bitflix-lp-prod` rodando: app (`127.0.0.1:3060`) + MinIO + mc-init. Postgres externo na VM `192.168.14.20:6432` (DB `bitflix_lp_prod`). nginx + certbot Let's Encrypt cobrindo `cms.bitflix.com.br` + `minio.cms.bitflix.com.br`. systemd unit `bitflix-lp-prod.service` enabled. URLs vivas: `https://cms.bitflix.com.br/admin` (200 admin) + `https://minio.cms.bitflix.com.br` (200 console). Conteúdo dos Globals + Users restaurado do staging via dump SQL manual.
-
-**Apex DNS cutover deferred** — `bitflix.com.br` raiz ainda aponta pra LP antiga em outra hospedagem. User decide quando desligar a antiga + criar A record `@` → `184.171.240.212` no Cloudflare + emitir cert apex+www. Passo 8.10 do runbook em `docs/INFRA.md`. Estado completo em `.omc/progress/prod-deploy.md`.
+**Deploy prod ATIVO em tomahawk (2026-04-30; apex já em produção).** Compose `bitflix-lp-prod` rodando: app (`127.0.0.1:3060`) + MinIO + mc-init. Postgres externo na VM `192.168.14.20:6432` (DB `bitflix_lp_prod`). nginx + certbot Let's Encrypt cobrindo `bitflix.com.br`, `www.bitflix.com.br`, `cms.bitflix.com.br` e `minio.cms.bitflix.com.br`. systemd unit `bitflix-lp-prod.service` enabled. URLs vivas: `https://bitflix.com.br` (200 site público), `https://bitflix.com.br/blog` (200 blog), `https://cms.bitflix.com.br/admin` (200 admin) + `https://minio.cms.bitflix.com.br` (200 console). Conteúdo dos Globals + Users restaurado do staging via dump SQL manual. DNS apex e `www` resolvem para `184.171.240.212`.
 
 **Quirks descobertos durante deploy prod (CRÍTICOS pra próxima sessão):**
 - Build do Dockerfile.prod precisa migrate ANTES de next build (já implementado: `RUN pnpm payload migrate` antes de `RUN pnpm build`). Razão: prerender de várias rotas hita Payload Local API.
@@ -25,9 +23,9 @@ Antes de qualquer trabalho:
 5. Leia `.omc/plans/mvp.md` (plano MVP staging — Fases 1-5; contrato).
 6. Leia `.omc/plans/prod-deploy.md` (plano deploy prod — relevante agora).
 7. Leia `.omc/progress/mvp.md` (estado MVP staging — done).
-8. Leia `.omc/progress/prod-deploy.md` (estado prod deploy — em execução).
+8. Leia `.omc/progress/prod-deploy.md` (estado prod deploy — done).
 
-Sessão nova começa fria mas com tudo persistido. Identifique próximo passo `not-started`/`in-progress` no progress file e siga.
+Sessão nova começa fria mas com tudo persistido. Identifique próximo passo `not-started`/`in-progress` no progress file e siga, mas não trate o cutover apex como pendente: ele já está feito.
 
 Esses arquivos são o contrato. Não duplicar conteúdo aqui.
 

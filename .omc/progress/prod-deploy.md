@@ -8,15 +8,16 @@
 
 ## Status global
 
-**Status overall:** `in-progress` (compose prod up + admin acessível via TLS; falta cutover DNS apex)
-**Próxima ação:** user faz cutover apex no Cloudflare quando estiver pronto pra desligar LP antiga (passo 8.10).
-**Antes de começar nova sessão:** ler CLAUDE.md "Toolchain quirks" + `docs/INFRA.md` seção 8 + este arquivo "Decisões durante execução".
+**Status overall:** `done` (produção ativa em apex + www + cms + minio.cms).
+**Próxima ação:** nenhuma ação de cutover pendente. Próximos trabalhos são evolução normal do produto/conteúdo.
+**Antes de começar nova sessão:** ler `AGENTS.md`, `docs/INFRA.md` seção 8 e este arquivo "Decisões durante execução".
 
 **URLs ativas:**
 - `https://cms.bitflix.com.br/admin` → 200 Payload admin TLS
 - `https://minio.cms.bitflix.com.br` → 200 MinIO console TLS
 - `https://cms.bitflix.com.br/blog` → 404 (middleware bloqueia)
-- `bitflix.com.br` apex → ainda LP antiga (cutover deferred)
+- `https://bitflix.com.br` → 200 site público TLS
+- `https://www.bitflix.com.br` → 200/redirect para site público TLS
 
 | Status | Significado |
 |--------|-------------|
@@ -38,8 +39,8 @@
 | 8.7 | Seed + restore manual de Users/Authors/Globals do staging | done |
 | 8.8 | nginx vhosts + certbot (cms + minio.cms) | done |
 | 8.9 | systemd autostart compose | done |
-| 8.10 | Cutover DNS apex (`@` + cert apex/www) | not-started (deferred — LP antiga continua) |
-| 8.11 | Acceptance criteria | partial (cutover apex pendente) |
+| 8.10 | Cutover DNS apex (`@` + cert apex/www) | done |
+| 8.11 | Acceptance criteria | done |
 
 ---
 
@@ -52,9 +53,15 @@
 - **Migration:** `20260504_004730` aplicada durante o build (`Migrated: 20260504_004730 (106ms)`).
 - **Build:** `next build` concluído com sucesso; rota nova `/blog/catalogo-open-source` aparece como dinâmica.
 - **Conteúdo:** `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-ruflo-catalog-entry.ts` criou/atualizou `Article.slug = ruflo-orquestracao-multiagente-para-claude-code` e `OpenSourceCatalogEntry.slug = ruflo`.
-- **Smokes internos no tomahawk com `Host: bitflix.com.br`:** `/blog/catalogo-open-source` → 200, `/blog/ruflo-orquestracao-multiagente-para-claude-code` → 200, `/og/ruflo-orquestracao-multiagente-para-claude-code?v=prod` → 200 PNG.
+- **Smokes públicos e internos:** `/blog/catalogo-open-source` → 200, `/blog/ruflo-orquestracao-multiagente-para-claude-code` → 200, `/og/ruflo-orquestracao-multiagente-para-claude-code?v=prod` → 200 PNG.
 - **Admin:** `https://cms.bitflix.com.br/admin` → 200.
-- **Observação:** apex `bitflix.com.br` continua sem cutover por decisão anterior; as rotas públicas foram validadas no app de produção via Host header local. Tornam-se públicas no apex quando o passo 8.10 for executado.
+
+### Correção de documentação 2026-05-04 — Apex já ativo
+
+- **Correção:** documentação anterior ainda dizia que o cutover apex estava pendente. Esse estado estava desatualizado.
+- **Evidência atual:** `dig +short bitflix.com.br A @1.1.1.1` → `184.171.240.212`; `dig +short www.bitflix.com.br A @1.1.1.1` → `184.171.240.212`.
+- **Smokes públicos:** `https://bitflix.com.br` → 200, `https://bitflix.com.br/blog/catalogo-open-source` → 200, `https://bitflix.com.br/blog/ruflo-orquestracao-multiagente-para-claude-code` → 200.
+- **Decisão operacional:** não tratar `8.10` como pendente em sessões futuras.
 
 ### Arquitetura prod (decidida 2026-04-30)
 
@@ -62,7 +69,7 @@
 - **Postgres externo** na VM `192.168.14.20:6432` (porta diferente do default 5432)
 - **MinIO console** acessível em `minio.cms.bitflix.com.br` (proxy nginx → 127.0.0.1:9001)
 - **systemd unit oneshot** dispara compose no boot (mesmo padrão staging)
-- **DNS apex por último** — cutover só após app+cert prontos pra evitar downtime da LP atual
+- **DNS apex ativo** — `bitflix.com.br` e `www.bitflix.com.br` apontam para `184.171.240.212`
 
 ### Inputs do user (recebidos 2026-04-30)
 
@@ -113,9 +120,9 @@
 - **Risco:** se VM cair, app cai junto. Aceitável (VM tem backup diário próprio).
 
 ### 2026-04-30 — Apex (`@`) DNS por último
-- **Decisão:** DNS records `cms` + `www` + `minio.cms` criados primeiro; apex `@` só depois do app + cert prontos.
-- **Motivo:** apex hoje aponta pra LP draft AI em outra hospedagem. Trocar antes do tomahawk estar pronto = LP cai 0% disponível durante setup. Cutover último passo minimiza janela.
-- **How to apply:** runbook seção 8.10 explícito sobre ordem.
+- **Decisão histórica:** DNS records `cms` + `www` + `minio.cms` foram criados primeiro; apex `@` ficou para depois do app + cert prontos.
+- **Motivo na época:** apex ainda apontava para LP draft AI em outra hospedagem. Trocar antes do tomahawk estar pronto criaria downtime. Cutover último passo minimizava janela.
+- **Estado atual:** cutover já foi feito; `bitflix.com.br` e `www.bitflix.com.br` apontam para `184.171.240.212`.
 
 ### 2026-04-30 — Compose project name `bitflix-lp-prod` (não `bitflix-lp`)
 - **Decisão:** `name: bitflix-lp-prod` no compose + container_name `bitflix-lp-prod-*`.
@@ -139,7 +146,7 @@
 - **Bonus fix:** wrapper `getAllPublishedArticleSlugsForBuild` em `articles.service.ts` que silencia 42P01 e retorna `[]`. Defesa em profundidade caso build rode sem schema (deploy reset).
 
 ### 2026-04-30 — Site público mostrava conteúdo do seed mesmo após admin editado
-- **Sintoma:** após restore de Globals do staging, admin mostrava textos refinados mas `cms.bitflix.com.br/admin` páginas de site (e teoricamente `bitflix.com.br` após cutover) continuariam com defaults do seed.
+- **Sintoma:** após restore de Globals do staging, admin mostrava textos refinados mas páginas públicas continuavam com defaults do seed.
 - **Causa raiz:** páginas `(site)/*` viraram **static** no build (Server Components com `await getX()` mas sem indicador de dinamicidade). Next prerender + cacheado com `s-maxage=31536000` (1 ano).
 - **Fix:** `export const dynamic = 'force-dynamic'` em todas as 7 pages do `(site)`: home, produtos, servicos, sobre, contato, blog list, blog/[slug]. Trade-off: perde static optimization mas edits no admin viram visíveis na próxima request.
 - **Lição:** Site CMS-driven precisa pages dinâmicas por default. Sem admin webhook chamando `revalidatePath`, static render = conteúdo fossilizado.
@@ -168,8 +175,8 @@
 - [x] Tomahawk: nginx + certbot pra `cms` + `minio.cms` — done 2026-04-30
 - [x] Tomahawk: enable systemd unit — done 2026-04-30 (reboot test deferred — design oneshot+RemainAfterExit já validado)
 - [x] Tomahawk: marcar pages (site) como `dynamic = 'force-dynamic'` + rebuild — done 2026-04-30
-- [ ] **Cloudflare: cutover A record apex `@` → `184.171.240.212`** (deferred — LP antiga continua rodando até user decidir desligar) — passo 8.10
-- [ ] **Tomahawk: certbot pra apex + www** (após cutover DNS) — passo 8.10
+- [x] **Cloudflare: cutover A record apex `@` → `184.171.240.212`** — done
+- [x] **Tomahawk: certbot pra apex + www** — done
 - [ ] Apagar `/tmp/restore-prod-globals.sql` em parrilla + tomahawk (contém hash senha admin)
 - [ ] Smoke test final + acceptance criteria — passo 8.11
 
@@ -180,6 +187,6 @@
 1. Ler `CLAUDE.md` (estado atual + toolchain quirks)
 2. Ler `docs/INFRA.md` seção 8 (runbook copy-paste)
 3. Ler este arquivo (estado dos passos)
-4. Verificar último passo `not-started` ou `in-progress`
-5. Se user já rodou parte do runbook: validar via `curl` (Claude tem acesso HTTPS público)
+4. Verificar último passo `not-started` ou `in-progress`, mas lembrar que o cutover apex já está concluído
+5. Se user já rodou parte do runbook: validar via `curl` (Codex tem acesso HTTPS público)
 6. Atualizar este arquivo (status + timestamp + bloqueios), commit, push

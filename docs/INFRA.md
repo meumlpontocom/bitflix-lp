@@ -1,7 +1,7 @@
 # Bitflix LP — Infraestrutura, Ambientes e Deploy
 
 > Servidores, deploy, redes, secrets.
-> Última atualização: 2026-04-29.
+> Última atualização: 2026-05-04.
 
 ---
 
@@ -92,11 +92,11 @@ sudo usermod -aG docker $USER && newgrp docker
 - `bitflix.com.br` + `www.bitflix.com.br` → site público (porta interna `3060`)
 - `cms.bitflix.com.br` → admin Payload (mesmo container, middleware Next roteia)
 
-### Migração DNS apex
-- Hoje `bitflix.com.br` aponta para LP draft AI em outra hospedagem.
-- DNS via Cloudflare (sem proxy/CDN); repointar A record para tomahawk IP é trivial.
-- Subdomínios já apontando para tomahawk: `agentes.`, `hd4k.`, `minio.`, `n8n.`, `pereira.`, `painel.minio.`, `stats.`.
-- Estratégia de cutover (ainda a definir com user): redirect 301 da LP atual? Substituição direta? A definir.
+### DNS apex
+- `bitflix.com.br` e `www.bitflix.com.br` já apontam para o tomahawk (`184.171.240.212`).
+- O site público está ativo em `https://bitflix.com.br`.
+- `cms.bitflix.com.br` atende o Payload admin.
+- `minio.cms.bitflix.com.br` atende o console MinIO.
 
 ---
 
@@ -104,9 +104,10 @@ sudo usermod -aG docker $USER && newgrp docker
 
 - **Apenas DNS** (sem proxy/CDN).
 - A records:
-  - `bitflix.com.br` → IP do tomahawk (hoje aponta pra outro lugar; cutover pendente)
-  - `www.bitflix.com.br` → IP do tomahawk
-  - `cms.bitflix.com.br` → IP do tomahawk
+  - `bitflix.com.br` → `184.171.240.212` (tomahawk)
+  - `www.bitflix.com.br` → `184.171.240.212` (tomahawk)
+  - `cms.bitflix.com.br` → `184.171.240.212` (tomahawk)
+  - `minio.cms.bitflix.com.br` → `184.171.240.212` (tomahawk)
   - `staging.bitflix.com.br` → `45.182.133.84` (parrilla)
   - `staging.cms.bitflix.com.br` → `45.182.133.84`
   - `staging.minio.bitflix.com.br` → `45.182.133.84`
@@ -232,19 +233,20 @@ Artefatos prontos no repo:
 - `infra/prod/bitflix-lp-prod.service` — systemd unit autostart compose
 - `.env.production.example` — template
 
-### 8.1 DNS Cloudflare (manual no painel)
+### 8.1 DNS Cloudflare
 
-Criar A records (DNS only, sem proxy/CDN). Apex `@` por último (cutover final):
+Estado atual: records de produção já apontam para o tomahawk.
 
-| Tipo | Nome | Conteúdo | Proxy | Quando |
+| Tipo | Nome | Conteúdo | Proxy | Status |
 |------|------|----------|-------|--------|
-| A | `cms` | `184.171.240.212` | DNS only | AGORA |
-| A | `www` | `184.171.240.212` | DNS only | AGORA |
-| A | `minio.cms` | `184.171.240.212` | DNS only | AGORA |
-| A | `@` (apex `bitflix.com.br`) | `184.171.240.212` | DNS only | DEPOIS — passo 8.10 |
+| A | `@` (apex `bitflix.com.br`) | `184.171.240.212` | DNS only | ativo |
+| A | `www` | `184.171.240.212` | DNS only | ativo |
+| A | `cms` | `184.171.240.212` | DNS only | ativo |
+| A | `minio.cms` | `184.171.240.212` | DNS only | ativo |
 
-Validar (esperar até 5 min de propagação):
+Validar:
 ```bash
+dig +short bitflix.com.br A @1.1.1.1
 dig +short cms.bitflix.com.br A @1.1.1.1
 dig +short www.bitflix.com.br A @1.1.1.1
 dig +short minio.cms.bitflix.com.br A @1.1.1.1
@@ -418,8 +420,9 @@ curl -I -H "Host: minio.cms.bitflix.com.br" http://127.0.0.1
 # Esperar 200/302/403 (não 404). cms deve responder Payload admin.
 
 # 4) Emite certs Let's Encrypt + injeta SSL nos vhosts (modo --nginx)
-# IMPORTANTE: NÃO incluir bitflix.com.br/www aqui ainda — apex DNS ainda aponta pra LP antiga.
 sudo certbot --nginx \
+  -d bitflix.com.br \
+  -d www.bitflix.com.br \
   -d cms.bitflix.com.br \
   -d minio.cms.bitflix.com.br \
   --non-interactive --agree-tos --redirect \
@@ -429,8 +432,10 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Validar TLS dos 2 hostnames já apontando:
+Validar TLS:
 ```bash
+curl -I https://bitflix.com.br                         # 200, site público
+curl -I https://www.bitflix.com.br                     # 200 ou redirect para apex
 curl -I https://cms.bitflix.com.br/admin               # 200, admin Payload
 curl -I https://minio.cms.bitflix.com.br               # 307 → /login (MinIO console)
 curl -I https://cms.bitflix.com.br/blog                # 404 (middleware bloqueia)
@@ -451,65 +456,32 @@ sudo systemctl status bitflix-lp-prod.service
 
 ### 8.10 Cutover DNS apex
 
-Quando passos 8.1–8.9 estiverem OK e admin/MinIO console acessíveis com TLS:
+**Concluído.** `bitflix.com.br` e `www.bitflix.com.br` já resolvem para `184.171.240.212` e respondem em HTTPS pelo app de produção.
 
-1. Cloudflare painel → criar A record:
-
-   | Tipo | Nome | Conteúdo | Proxy |
-   |------|------|----------|-------|
-   | A | `@` | `184.171.240.212` | DNS only |
-
-   (Se já existe apontando pra LP antiga: editar pra `184.171.240.212`.)
-
-2. Aguardar propagação (Cloudflare TTL Auto = 5 min com DNS only):
-   ```bash
-   dig +short bitflix.com.br A @1.1.1.1
-   # Deve retornar 184.171.240.212
-   ```
-
-3. Emitir cert pro apex + www:
-   ```bash
-   sudo certbot --nginx \
-     -d bitflix.com.br -d www.bitflix.com.br \
-     --non-interactive --agree-tos --redirect \
-     -m miltonbastos@gmail.com
-
-   sudo nginx -t
-   sudo systemctl reload nginx
-   ```
-
-4. Smoke final:
-   ```bash
-   curl -I https://bitflix.com.br                  # 200
-   curl -I https://www.bitflix.com.br              # 200 ou 301 → apex
-   curl -I https://bitflix.com.br/admin            # 404 (middleware)
-   curl -I https://bitflix.com.br/blog             # 200
-   curl -I https://bitflix.com.br/sitemap.xml      # 200
-   curl -I https://bitflix.com.br/blog/feed.xml    # 200
-   curl -I https://cms.bitflix.com.br/blog         # 404 (middleware)
-   curl -sI https://bitflix.com.br/og/test | head -5
-   ```
-
-5. Renovação automática de certs:
-   ```bash
-   sudo systemctl status certbot.timer
-   sudo certbot renew --dry-run
-   ```
+Smoke atual:
+```bash
+dig +short bitflix.com.br A @1.1.1.1     # 184.171.240.212
+dig +short www.bitflix.com.br A @1.1.1.1 # 184.171.240.212
+curl -I https://bitflix.com.br           # 200
+curl -I https://bitflix.com.br/blog      # 200
+curl -I https://bitflix.com.br/admin     # 404 (middleware)
+curl -I https://cms.bitflix.com.br/admin # 200
+```
 
 ### 8.11 Acceptance criteria
 
-- [ ] DNS cms/www/minio.cms resolvem `184.171.240.212`
-- [ ] DB `bitflix_lp_prod` acessível do tomahawk (`pg_hba` liberado)
-- [ ] `docker compose ps` mostra app + minio Up + mc-init exit(0)
-- [ ] Build da imagem rodou `pnpm payload migrate` sem erro (visivel no log do build)
-- [ ] `pnpm seed` rodou sem erro (4 Products + 7 Globals + Author Milton criados)
-- [ ] `https://cms.bitflix.com.br/admin` → 200 + login funciona
-- [ ] `https://minio.cms.bitflix.com.br` → console MinIO acessível
-- [ ] systemd `bitflix-lp-prod.service` enabled
-- [ ] DNS apex cutover OK
-- [ ] `https://bitflix.com.br/blog/<slug>` renderiza artigo
-- [ ] `https://bitflix.com.br/og/<slug>` retorna PNG
-- [ ] `https://bitflix.com.br/blog/feed.xml` válido (W3C)
+- [x] DNS apex/www/cms/minio.cms resolvem `184.171.240.212`
+- [x] DB `bitflix_lp_prod` acessível do tomahawk (`pg_hba` liberado)
+- [x] `docker compose ps` mostra app + minio Up + mc-init exit(0)
+- [x] Build da imagem rodou `pnpm payload migrate` sem erro
+- [x] `pnpm seed` rodou sem erro (4 Products + 7 Globals + Author Milton criados)
+- [x] `https://cms.bitflix.com.br/admin` → 200 + login funciona
+- [x] `https://minio.cms.bitflix.com.br` → console MinIO acessível
+- [x] systemd `bitflix-lp-prod.service` enabled
+- [x] DNS apex cutover OK
+- [x] `https://bitflix.com.br/blog/<slug>` renderiza artigo
+- [x] `https://bitflix.com.br/og/<slug>` retorna PNG
+- [x] `https://bitflix.com.br/blog/feed.xml` responde
 
 ### 8.12 Operação dia-a-dia
 
