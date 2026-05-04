@@ -57,6 +57,19 @@
 - **Smokes públicos:** `/blog/catalogo-open-source` → 200, `/blog/3dsvg-transforme-svgs-2d-em-componentes-3d-interativos` → 200, `/blog/sciwrite-skill-de-edicao-cientifica-baseada-em-writing-in-the-sciences` → 200, `/og/3dsvg-transforme-svgs-2d-em-componentes-3d-interativos?v=prod` → 200 PNG.
 - **Render verificado:** artigo 3dsvg em produção com headings `<h2>`, fonte original, disclaimer editorial e code block terminal-style com botão `Copiar`.
 
+### Deploy 2026-05-04 — Github Awesome weekly #31
+
+- **Commit em produção:** `823b2a9` (`feat: seed github awesome weekly 31 catalog`).
+- **Deploy:** `git pull --ff-only origin main` em `/application/bitflix-lp` como `meuml` + `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build bitflix-lp-prod-app`.
+- **Migration:** nenhuma migration nova; `pnpm payload migrate` no build retornou `Done`.
+- **Build:** `next build` concluído com sucesso; imagem `bitflix-lp-prod-bitflix-lp-prod-app` recriada e container `bitflix-lp-prod-app` reiniciado.
+- **Conteúdo:** `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-githubawesome-weekly-31-catalog.ts` criou/atualizou 35 artigos publicados e 35 entradas publicadas do catálogo, lote `Github Awesome weekly #31`.
+- **Fluxo GitHub:** script processa um repositório por vez: consulta metadados GitHub, cria/atualiza post e entrada do catálogo, atualiza o import record e só depois avança para o próximo item.
+- **Validação CMS/API:** `https://cms.bitflix.com.br/api/open-source-catalog-entries?limit=1&depth=0` retornou `totalDocs: 71`; filtro `discovery_source_name = Github Awesome weekly #31` retornou `totalDocs: 35`; `discovery_batch_id.status = done`; `repos_found_count = 35`; `repos_imported_count = 35`.
+- **Smokes públicos:** `/blog/catalogo-open-source` → 200, `/blog/chromex-assistente-codex-no-side-panel-do-chrome` → 200, `/blog/club-3090-receitas-para-servir-llms-grandes-em-rtx-3090` → 200, `/og/chromex-assistente-codex-no-side-panel-do-chrome?v=prod` → 200 PNG.
+- **Render verificado:** artigo chromex em produção com headings `<h2>`, fonte original, disclaimer editorial e code block terminal-style com botão `Copiar`.
+- **LightRAG:** indexação enviada via REST `/documents/text` com `file_source = bitflix-lp/catalogo-open-source/githubawesome-weekly-31.md`; track `insert_20260504_221727_220be021`; status `processed`.
+
 ### Deploy 2026-05-04 — Catálogo open source + Ruflo
 
 - **Commit em produção:** `43a5abe` (`feat: add open source catalog`).
