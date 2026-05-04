@@ -45,6 +45,17 @@
 
 ## Contexto e decisões
 
+### Deploy 2026-05-04 — Catálogo open source + Ruflo
+
+- **Commit em produção:** `43a5abe` (`feat: add open source catalog`).
+- **Deploy:** `git pull --ff-only origin main` em `/application/bitflix-lp` + `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build bitflix-lp-prod-app`.
+- **Migration:** `20260504_004730` aplicada durante o build (`Migrated: 20260504_004730 (106ms)`).
+- **Build:** `next build` concluído com sucesso; rota nova `/blog/catalogo-open-source` aparece como dinâmica.
+- **Conteúdo:** `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-ruflo-catalog-entry.ts` criou/atualizou `Article.slug = ruflo-orquestracao-multiagente-para-claude-code` e `OpenSourceCatalogEntry.slug = ruflo`.
+- **Smokes internos no tomahawk com `Host: bitflix.com.br`:** `/blog/catalogo-open-source` → 200, `/blog/ruflo-orquestracao-multiagente-para-claude-code` → 200, `/og/ruflo-orquestracao-multiagente-para-claude-code?v=prod` → 200 PNG.
+- **Admin:** `https://cms.bitflix.com.br/admin` → 200.
+- **Observação:** apex `bitflix.com.br` continua sem cutover por decisão anterior; as rotas públicas foram validadas no app de produção via Host header local. Tornam-se públicas no apex quando o passo 8.10 for executado.
+
 ### Arquitetura prod (decidida 2026-04-30)
 
 - **App + MinIO** em mesmo `docker-compose.prod.yml` no tomahawk
