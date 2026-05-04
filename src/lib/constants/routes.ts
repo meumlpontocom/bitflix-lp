@@ -5,6 +5,7 @@ export const ROUTES = {
   sobre: '/sobre',
   contato: '/contato',
   blog: '/blog',
+  openSourceCatalog: '/blog/catalogo-open-source',
   article: (slug: string) => `/blog/${slug}`,
   slides: (slug: string) => `/blog/${slug}/slides`,
   feed: '/blog/feed.xml',

@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArticleCard } from '@/components/blog/article-card'
 import { CategoryFilter } from '@/components/blog/category-filter'
 import { BlogPagination } from '@/components/blog/pagination'
 import { listPublishedArticles } from '@/services/articles.service'
 import { listActiveCategories } from '@/services/categories.service'
+import { ROUTES } from '@/lib/constants/routes'
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -51,6 +53,13 @@ export default async function BlogPage({ searchParams }: Props) {
             Adaptações editoriais. Cada artigo cita a fonte e marca a assistência de IA com
             transparência.
           </p>
+          <Link
+            href={ROUTES.openSourceCatalog}
+            prefetch={false}
+            className="mt-6 inline-flex h-10 items-center rounded-lg border border-bitflix-500 px-4 text-bitflix-700 text-sm font-medium transition hover:bg-bitflix-500 hover:text-white"
+          >
+            Ver catálogo open source
+          </Link>
         </div>
       </header>
 

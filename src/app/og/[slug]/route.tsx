@@ -1,4 +1,6 @@
 import { ImageResponse } from 'next/og'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { getArticleBySlug } from '@/services/articles.service'
 
 export const runtime = 'nodejs'
@@ -12,9 +14,20 @@ const TEAL_900 = '#003030'
 const TEAL_500 = '#008090'
 const CREAM = '#fbf1e1'
 
+const regularFontPromise = readFile(
+  join(process.cwd(), 'node_modules/geist/dist/fonts/geist-sans/Geist-Regular.ttf'),
+)
+const boldFontPromise = readFile(
+  join(process.cwd(), 'node_modules/geist/dist/fonts/geist-sans/Geist-Bold.ttf'),
+)
+
 export async function GET(_req: Request, { params }: Params) {
   const { slug } = await params
-  const article = await getArticleBySlug(slug)
+  const [article, regularFont, boldFont] = await Promise.all([
+    getArticleBySlug(slug),
+    regularFontPromise,
+    boldFontPromise,
+  ])
 
   const title = article?.title ?? 'Bitflix'
   const category = article?.categories[0]?.name ?? 'IA aplicada'
@@ -33,6 +46,7 @@ export async function GET(_req: Request, { params }: Params) {
           padding: '80px',
           background: `linear-gradient(135deg, ${TEAL_900} 0%, ${TEAL_500} 100%)`,
           color: CREAM,
+          fontFamily: 'Geist',
           position: 'relative',
         }}
       >
@@ -107,8 +121,22 @@ export async function GET(_req: Request, { params }: Params) {
     {
       width: 1200,
       height: 630,
+      fonts: [
+        {
+          name: 'Geist',
+          data: regularFont,
+          weight: 400,
+          style: 'normal',
+        },
+        {
+          name: 'Geist',
+          data: boldFont,
+          weight: 700,
+          style: 'normal',
+        },
+      ],
       headers: {
-        'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400',
+        'Cache-Control': 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400',
       },
     },
   )

@@ -75,6 +75,8 @@ export interface Config {
     products: Product;
     media: Media;
     'article-imports-log': ArticleImportsLog;
+    'open-source-catalog-imports': OpenSourceCatalogImport;
+    'open-source-catalog-entries': OpenSourceCatalogEntry;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -90,6 +92,8 @@ export interface Config {
     products: ProductsSelect<false> | ProductsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'article-imports-log': ArticleImportsLogSelect<false> | ArticleImportsLogSelect<true>;
+    'open-source-catalog-imports': OpenSourceCatalogImportsSelect<false> | OpenSourceCatalogImportsSelect<true>;
+    'open-source-catalog-entries': OpenSourceCatalogEntriesSelect<false> | OpenSourceCatalogEntriesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -416,6 +420,131 @@ export interface ArticleImportsLog {
   createdAt: string;
 }
 /**
+ * Execucoes de importacao do catalogo open source. Use para auditoria de fonte, status e erros.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "open-source-catalog-imports".
+ */
+export interface OpenSourceCatalogImport {
+  id: number;
+  /**
+   * URL da lista, video, newsletter ou pagina usada para descobrir repositorios.
+   */
+  source_url: string;
+  source_name?: string | null;
+  /**
+   * Pessoa/agente que solicitou ou executou a importacao.
+   */
+  requested_by?: string | null;
+  status: 'pending' | 'running' | 'done' | 'partial' | 'failed';
+  repos_found_count?: number | null;
+  repos_imported_count?: number | null;
+  repos_skipped_count?: number | null;
+  /**
+   * Erros acumulados durante a importacao. Nao usar para HTML bruto da fonte.
+   */
+  errors?:
+    | {
+        repository_url?: string | null;
+        message: string;
+        occurred_at?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  /**
+   * Notas editoriais. Nao colar conteudo pago; registrar apenas contexto operacional.
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Metadados estruturados do catalogo open source. Cada item aponta para um post real do blog.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "open-source-catalog-entries".
+ */
+export interface OpenSourceCatalogEntry {
+  id: number;
+  title: string;
+  slug: string;
+  /**
+   * Post do blog usado como detalhe publico do projeto.
+   */
+  article: number | Article;
+  repository_url: string;
+  repository_owner?: string | null;
+  repository_name?: string | null;
+  homepage_url?: string | null;
+  docs_url?: string | null;
+  /**
+   * Links oficiais consultados: repo, docs, exemplos, site do projeto.
+   */
+  source_links?:
+    | {
+        label?: string | null;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  description_original?: string | null;
+  /**
+   * Resumo curto editorial para o card do catalogo.
+   */
+  summary_pt_br: string;
+  what_it_does?: string | null;
+  when_to_use?: string | null;
+  when_not_to_use?: string | null;
+  target_users?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  project_type:
+    | 'ai-agent'
+    | 'mcp'
+    | 'llm-app'
+    | 'developer-tool'
+    | 'automation'
+    | 'data-ai'
+    | 'frontend'
+    | 'backend'
+    | 'infra'
+    | 'security'
+    | 'learning'
+    | 'other';
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  github_topics?:
+    | {
+        topic: string;
+        id?: string | null;
+      }[]
+    | null;
+  primary_language?: string | null;
+  license?: string | null;
+  stars?: number | null;
+  forks?: number | null;
+  open_issues?: number | null;
+  last_pushed_at?: string | null;
+  last_checked_at?: string | null;
+  /**
+   * Trecho curto e sanitizado, apenas quando ajudar a revisao editorial.
+   */
+  readme_excerpt?: string | null;
+  discovery_source_url?: string | null;
+  discovery_source_name?: string | null;
+  discovery_batch_id?: (number | null) | OpenSourceCatalogImport;
+  catalog_status: 'draft' | 'review' | 'published' | 'archived';
+  is_featured?: boolean | null;
+  is_active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -470,6 +599,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'article-imports-log';
         value: number | ArticleImportsLog;
+      } | null)
+    | ({
+        relationTo: 'open-source-catalog-imports';
+        value: number | OpenSourceCatalogImport;
+      } | null)
+    | ({
+        relationTo: 'open-source-catalog-entries';
+        value: number | OpenSourceCatalogEntry;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -665,6 +802,89 @@ export interface ArticleImportsLogSelect<T extends boolean = true> {
   import_method?: T;
   triggered_by?: T;
   llm_summary?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "open-source-catalog-imports_select".
+ */
+export interface OpenSourceCatalogImportsSelect<T extends boolean = true> {
+  source_url?: T;
+  source_name?: T;
+  requested_by?: T;
+  status?: T;
+  repos_found_count?: T;
+  repos_imported_count?: T;
+  repos_skipped_count?: T;
+  errors?:
+    | T
+    | {
+        repository_url?: T;
+        message?: T;
+        occurred_at?: T;
+        id?: T;
+      };
+  started_at?: T;
+  finished_at?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "open-source-catalog-entries_select".
+ */
+export interface OpenSourceCatalogEntriesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  article?: T;
+  repository_url?: T;
+  repository_owner?: T;
+  repository_name?: T;
+  homepage_url?: T;
+  docs_url?: T;
+  source_links?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  description_original?: T;
+  summary_pt_br?: T;
+  what_it_does?: T;
+  when_to_use?: T;
+  when_not_to_use?: T;
+  target_users?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  project_type?: T;
+  categories?: T;
+  tags?: T;
+  github_topics?:
+    | T
+    | {
+        topic?: T;
+        id?: T;
+      };
+  primary_language?: T;
+  license?: T;
+  stars?: T;
+  forks?: T;
+  open_issues?: T;
+  last_pushed_at?: T;
+  last_checked_at?: T;
+  readme_excerpt?: T;
+  discovery_source_url?: T;
+  discovery_source_name?: T;
+  discovery_batch_id?: T;
+  catalog_status?: T;
+  is_featured?: T;
+  is_active?: T;
   updatedAt?: T;
   createdAt?: T;
 }

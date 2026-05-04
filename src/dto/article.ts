@@ -69,8 +69,9 @@ function mediaAlt(media: Article['cover_image']): string | null {
   return media.alt ?? null
 }
 
-function ogFallbackUrl(slug: string): string {
-  return ROUTES.og(slug)
+function ogFallbackUrl(slug: string, updatedAt: string): string {
+  const version = encodeURIComponent(updatedAt)
+  return `${ROUTES.og(slug)}?v=${version}`
 }
 
 function categoryToVM(cat: number | Category): { name: string; slug: string } | null {
@@ -98,7 +99,7 @@ export function toArticleListItemVM(article: Article): ArticleListItemVM {
     slug: article.slug,
     title: article.title,
     excerpt: article.excerpt ?? null,
-    coverUrl: override ?? cover ?? ogFallbackUrl(article.slug),
+    coverUrl: override ?? cover ?? ogFallbackUrl(article.slug, article.updatedAt),
     authorName: authorToVM(article.author).name,
     publishedAt: article.published_at ?? null,
     categories: (article.categories ?? [])
@@ -112,7 +113,7 @@ export function toArticleListItemVM(article: Article): ArticleListItemVM {
 export function toArticleDetailVM(article: Article): ArticleDetailVM {
   const override = mediaUrl(article.cover_image_override)
   const cover = mediaUrl(article.cover_image)
-  const coverUrl = override ?? cover ?? ogFallbackUrl(article.slug)
+  const coverUrl = override ?? cover ?? ogFallbackUrl(article.slug, article.updatedAt)
   const coverAlt =
     mediaAlt(article.cover_image_override) ?? mediaAlt(article.cover_image) ?? article.title
 

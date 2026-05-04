@@ -92,7 +92,7 @@ export default async function ArticlePage({ params }: Props) {
       <section className="mx-auto max-w-3xl px-6 py-16">
         <RenderLexical
           data={article.bodyLexical}
-          className="prose prose-lg max-w-none text-bitflix-text prose-headings:text-bitflix-900 prose-a:text-bitflix-700 hover:prose-a:text-bitflix-900"
+          className="article-richtext max-w-none text-bitflix-text"
         />
 
         {article.tags.length > 0 ? (

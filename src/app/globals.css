@@ -145,3 +145,82 @@ body {
     @apply font-sans;
   }
 }
+
+@layer components {
+  .article-richtext {
+    font-size: 1.125rem;
+    line-height: 1.78;
+  }
+
+  .article-richtext > * + * {
+    margin-top: 1.15rem;
+  }
+
+  .article-richtext p {
+    color: var(--color-bitflix-text);
+  }
+
+  .article-richtext h2 {
+    margin-top: 2.75rem;
+    margin-bottom: 0.85rem;
+    border-top: 1px solid rgb(0 128 144 / 18%);
+    padding-top: 1.15rem;
+    color: var(--color-bitflix-900);
+    font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  .article-richtext h3 {
+    margin-top: 2rem;
+    margin-bottom: 0.65rem;
+    color: var(--color-bitflix-900);
+    font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .article-richtext a {
+    color: var(--color-bitflix-700);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: rgb(0 128 144 / 35%);
+    text-underline-offset: 0.18em;
+  }
+
+  .article-richtext ul,
+  .article-richtext ol {
+    margin-top: 1rem;
+    padding-left: 1.35rem;
+  }
+
+  .article-richtext li + li {
+    margin-top: 0.4rem;
+  }
+
+  .article-richtext blockquote {
+    margin-top: 1.5rem;
+    border-left: 3px solid var(--color-bitflix-500);
+    padding-left: 1rem;
+    color: rgb(45 45 45 / 82%);
+    font-style: italic;
+  }
+
+  .article-richtext :not(pre) > code {
+    border-radius: 0.375rem;
+    background: var(--color-bitflix-cream-light);
+    padding: 0.12rem 0.32rem;
+    color: var(--color-bitflix-900);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.92em;
+  }
+
+  .article-richtext > div:has(pre) {
+    margin-top: 1.75rem;
+    margin-bottom: 1.9rem;
+  }
+}

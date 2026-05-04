@@ -14,6 +14,8 @@ import { Media } from './collections/Media.ts'
 import { Products } from './collections/Products.ts'
 import { Tags } from './collections/Tags.ts'
 import { Users } from './collections/Users.ts'
+import { OpenSourceCatalogEntries } from './collections/OpenSourceCatalogEntries.ts'
+import { OpenSourceCatalogImports } from './collections/OpenSourceCatalogImports.ts'
 
 import { Navigation } from './globals/Navigation.ts'
 import { SiteSettings } from './globals/SiteSettings.ts'
@@ -52,6 +54,8 @@ export default buildConfig({
     Products,
     Media,
     ArticleImportsLog,
+    OpenSourceCatalogImports,
+    OpenSourceCatalogEntries,
   ],
   globals: [
     SiteSettings,

@@ -19,7 +19,11 @@ const BR_TIME = new Intl.DateTimeFormat('pt-BR', {
   hour12: false,
 })
 
+const BR_NUMBER = new Intl.NumberFormat('pt-BR')
+
 export const formatBRL = (cents: number): string => BRL.format(cents / 100)
+
+export const formatBRNumber = (value: number): string => BR_NUMBER.format(value)
 
 export const formatBRDate = (date: Date | string | number): string =>
   BR_DATE.format(new Date(date))
