@@ -853,7 +853,8 @@ async function upsertArticle(
     author: authorId,
     categories: categoryIds,
     tags: tagIds,
-    status: 'draft',
+    status: 'published',
+    published_at: new Date().toISOString(),
     is_active: true,
     created_via: 'manual',
   }
@@ -906,7 +907,7 @@ async function upsertCatalogEntry(
     readme_excerpt: seed.pitch.slice(0, 1200),
     discovery_source_url: DISCOVERY_SOURCE_URL,
     discovery_source_name: DISCOVERY_SOURCE_NAME,
-    catalog_status: 'draft',
+    catalog_status: 'published',
     is_featured: seed.rank <= 5,
     is_active: true,
     ...(meta
@@ -959,7 +960,7 @@ async function upsertImportRecord(payload: Awaited<ReturnType<typeof getPayload>
     started_at: new Date().toISOString(),
     finished_at: done ? new Date().toISOString() : undefined,
     notes:
-      'Lote criado a partir do conteúdo colado pelo usuário no chat. Curadoria Bitflix sem fonte externa rastreada. Articles ficam em status draft para revisão antes da publicação.',
+      'Lote criado a partir do conteúdo colado pelo usuário no chat. Curadoria Bitflix sem fonte externa rastreada. Articles publicados direto (parity com weekly-31).',
   } as const
 
   if (existingImport.docs[0]?.id) {
