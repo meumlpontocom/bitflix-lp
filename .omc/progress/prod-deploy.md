@@ -46,6 +46,20 @@
 
 ## Contexto e decisões
 
+### Deploy 2026-05-11 — Curadoria Bitflix open source maio/2026 (35 projetos)
+
+- **Commit em produção:** `6434875` (`feat: open source batch 2026-05 publica direto (parity weekly-31)`). Commit anterior `109122a` (criou script como draft) foi promovido a published direto antes do deploy.
+- **Deploy:** `git pull --ff-only origin main` em `/application/bitflix-lp` como `meuml` (via SSH `tomahawk`) + `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build bitflix-lp-prod-app`.
+- **Migration:** nenhuma migration nova; build rodou `pnpm payload migrate` (Done).
+- **Build:** `next build` concluído com sucesso; imagem `bitflix-lp-prod-bitflix-lp-prod-app` recriada (sha `80b97cd535`), container `bitflix-lp-prod-app` recriado. Next.js Ready em 1131ms.
+- **Conteúdo:** `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-open-source-batch-2026-05.ts` criou 35 artigos publicados + 35 entradas publicadas do catálogo, lote `Curadoria Bitflix de open source — maio/2026` (curadoria própria sem fonte externa rastreada).
+- **Fluxo GitHub:** script processa um repositório por vez (mesma pattern dos weekly-30/31): metadata GitHub → upsert Article → upsert OpenSourceCatalogEntry → update import record. Sleep 900ms entre repos.
+- **Validação CMS/API:** `https://cms.bitflix.com.br/api/open-source-catalog-imports?where[source_name][equals]=Curadoria Bitflix de open source — maio/2026` retornou `status=done`, `repos_found_count=35`, `repos_imported_count=35`.
+- **Smokes públicos:** `https://bitflix.com.br` → 200, `https://cms.bitflix.com.br/admin` → 200, `/blog/catalogo-open-source` → 200, `/blog/janitorr-faxina-automatizada-do-servidor-jellyfin-antes-do-disco-encher` → 200, `/blog/matcha-cliente-de-e-mail-completo-direto-no-terminal` → 200, `/blog/twenty-crm-open-source-para-sair-do-salesforce-sem-renovacao-cara` → 200, `/blog/questarr-sonarr-e-radarr-mas-para-a-sua-biblioteca-de-jogos` → 200, `/og/janitorr-...?v=prod` → 200.
+- **Render verificado:** `/blog/catalogo-open-source` renderiza cards dos novos slugs (Questarr, Snacks, Telepage etc.) com tags (games, igdb, prowlarr, ffmpeg, telegram) clicáveis.
+- **LightRAG:** desabilitado por custo desde 2026-05-11 (per memória global). Sem ingestão para LightRAG nesta rodada.
+- **Dev origin:** batch foi criado primeiro em dev como draft (commit `109122a`) e publicado via loop POST `/api/blog-publish` + flip manual de `catalog_status` (limitação documentada em memória `feedback_blog_publish_scope`). Script foi promovido a "published direto" antes do deploy prod para parity com weekly-30/31.
+
 ### Deploy 2026-05-04 — Github Awesome weekly #30
 
 - **Commit em produção:** `39f215e` (`feat: seed github awesome weekly catalog`).
