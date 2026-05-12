@@ -46,6 +46,16 @@
 
 ## Contexto e decisões
 
+### Deploy 2026-05-11 — Curadoria Bitflix Claude skills & agent tooling maio/2026 (35 drafts)
+
+- **Commit em produção:** `9528367` (`feat: seed open source batch 2026-05 Claude skills (35 drafts)`). Script criado com `status: 'draft'` e `catalog_status: 'draft'` a pedido explícito do usuário pra revisão no admin antes de publicar.
+- **Deploy:** `git pull --ff-only origin main` em `/application/bitflix-lp` como `meuml` (via SSH `tomahawk`). Sem rebuild de imagem nessa rodada — script foi copiado pro container rodando via `docker compose ... cp scripts/seed-open-source-batch-2026-05-claude-skills.ts bitflix-lp-prod-app:/app/scripts/...`. Atalho válido pq script é puro Payload Local API e não depende de mudança de schema/migration.
+- **Migration:** nenhuma migration nova; nenhum rebuild.
+- **Conteúdo:** `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-open-source-batch-2026-05-claude-skills.ts` criou 35 articles em status `draft` + 35 entries com `catalog_status: 'draft'`, lote `Curadoria Bitflix — Claude skills & agent tooling maio/2026`. Foco temático: Claude Code skills, agent tooling, AI dev primitives (claude-video, WRITING.md, cloudflare/skills, design-council, GodModeSkill etc.).
+- **Fluxo GitHub:** mesmo pattern dos batches anteriores. Sleep 900ms entre repos. 35/35 ✓ no log.
+- **Smokes públicos:** `https://bitflix.com.br` → 200, `https://cms.bitflix.com.br/admin` → 200, `/blog/catalogo-open-source` → 200. Drafts NÃO aparecem em `/catalogo-open-source` público (filtrado por `catalog_status: 'published'`) — vão aparecer só após revisão + publish.
+- **Próximos passos manuais:** revisar 35 drafts no admin `https://cms.bitflix.com.br/admin/collections/articles?where[_status][equals]=draft`. Depois rodar `/api/blog-publish` em massa nos slugs aprovados + flip `catalog_status: 'published'` nas entries correspondentes (limitação documentada em memória `feedback_blog_publish_scope`).
+
 ### Deploy 2026-05-11 — Curadoria Bitflix open source maio/2026 (35 projetos)
 
 - **Commit em produção:** `6434875` (`feat: open source batch 2026-05 publica direto (parity weekly-31)`). Commit anterior `109122a` (criou script como draft) foi promovido a published direto antes do deploy.
