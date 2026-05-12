@@ -54,7 +54,9 @@
 - **Conteúdo:** `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-open-source-batch-2026-05-claude-skills.ts` criou 35 articles em status `draft` + 35 entries com `catalog_status: 'draft'`, lote `Curadoria Bitflix — Claude skills & agent tooling maio/2026`. Foco temático: Claude Code skills, agent tooling, AI dev primitives (claude-video, WRITING.md, cloudflare/skills, design-council, GodModeSkill etc.).
 - **Fluxo GitHub:** mesmo pattern dos batches anteriores. Sleep 900ms entre repos. 35/35 ✓ no log.
 - **Smokes públicos:** `https://bitflix.com.br` → 200, `https://cms.bitflix.com.br/admin` → 200, `/blog/catalogo-open-source` → 200. Drafts NÃO aparecem em `/catalogo-open-source` público (filtrado por `catalog_status: 'published'`) — vão aparecer só após revisão + publish.
-- **Próximos passos manuais:** revisar 35 drafts no admin `https://cms.bitflix.com.br/admin/collections/articles?where[_status][equals]=draft`. Depois rodar `/api/blog-publish` em massa nos slugs aprovados + flip `catalog_status: 'published'` nas entries correspondentes (limitação documentada em memória `feedback_blog_publish_scope`).
+- **Publicação 2026-05-11 (segunda rodada):** user pediu publicar todos os 35 drafts. Criado `scripts/publish-batch-claude-skills.ts` (commit `04a5eeb`) que finda o import record por `source_name`, lista 35 entries via `discovery_batch_id` e faz update direto: `Article.status='published'` + `Article.published_at=now` + `OpenSourceCatalogEntry.catalog_status='published'`. Sem `revalidatePath` pois `(site)/*` usa `dynamic='force-dynamic'` (memória `feedback_site_pages_dynamic`).
+- **Run da publicação:** `docker compose cp` + `pnpm exec payload run scripts/publish-batch-claude-skills.ts` → 35/35 ✓. Import id=4, entries=35, todas published.
+- **Smokes pós-publish:** `/blog/claude-video-...` → 200, `/blog/godmodeskill-...` → 200, `/blog/writing-md-...` → 200, `/blog/cloudflare-skills-...` → 200, `/blog/catalogo-open-source` → 200 com slugs novos renderizados.
 
 ### Deploy 2026-05-11 — Curadoria Bitflix open source maio/2026 (35 projetos)
 
