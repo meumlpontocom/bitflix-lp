@@ -9,7 +9,7 @@
 ## Status global
 
 **Status overall:** `done` (produção ativa em apex + www + cms + minio.cms).
-**Próxima ação:** nenhuma ação de cutover pendente. Próximos trabalhos são evolução normal do produto/conteúdo.
+**Próxima ação:** deploy prod do batch `Dev tools & AI agents maio/2026` (35 já publicados em staging 2026-05-26). Demais trabalhos são evolução normal do produto/conteúdo.
 **Antes de começar nova sessão:** ler `AGENTS.md`, `docs/INFRA.md` seção 8 e este arquivo "Decisões durante execução".
 
 **URLs ativas:**
@@ -45,6 +45,16 @@
 ---
 
 ## Contexto e decisões
+
+### Staging 2026-05-26 — Curadoria Bitflix Dev tools & AI agents maio/2026 (35 publicados direto)
+
+- **Script:** `scripts/seed-open-source-batch-2026-05-dev-tools.ts` (curadoria própria Bitflix, sem fonte externa rastreada). Foco temático: dev tools, coding agents, CLIs, infra, segurança e AI tooling (AI Engineering Coach, AIPointer, rmux, Photo-agents, Zerostack, Terax, OpenSquilla, OpenPets, Lance, DroidDesk, SmallCode, zerolang, files-sdk, Concord, LUKSbox, pgGraph, claude-p, Codeindex, md2html etc.).
+- **Modo:** publica direto (`Article.status='published'` + `published_at` + `OpenSourceCatalogEntry.catalog_status='published'`), parity weekly-31/batch open-source 2026-05. User pediu publicação direta (sem revisão no admin) nesta rodada.
+- **Run staging:** `docker exec bitflix-lp-app pnpm exec payload run scripts/seed-open-source-batch-2026-05-dev-tools.ts` → 35/35 ✓. Sleep 900ms entre repos. Metadata GitHub via API pública (sem token = limite 60 req/h, suficiente).
+- **Verificação staging (psql):** import `Curadoria Bitflix — Dev tools & AI agents maio/2026` status=`done`, 35 entries (todas `catalog_status='published'`), 35 articles linkados todos `status='published'`.
+- **Migration:** nenhuma — script usa só Payload Local API sobre collections existentes (articles, open-source-catalog-entries, open-source-catalog-imports). Sem mudança de schema.
+- **revalidatePath:** desnecessário — `(site)/*` usa `dynamic='force-dynamic'` (memória `feedback_site_pages_dynamic`).
+- **Deploy prod:** PENDENTE (ação manual). Pattern: SSH `tomahawk` → `git pull --ff-only origin main` em `/application/bitflix-lp` → `docker compose ... cp scripts/seed-open-source-batch-2026-05-dev-tools.ts bitflix-lp-prod-app:/app/scripts/` (ou rebuild) → `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-open-source-batch-2026-05-dev-tools.ts`. Sem rebuild obrigatório (script puro Payload Local API, sem migration).
 
 ### Deploy 2026-05-11 — Curadoria Bitflix Claude skills & agent tooling maio/2026 (35 drafts)
 
