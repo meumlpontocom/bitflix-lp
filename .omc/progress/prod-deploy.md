@@ -9,7 +9,7 @@
 ## Status global
 
 **Status overall:** `done` (produção ativa em apex + www + cms + minio.cms).
-**Próxima ação:** deploy prod do batch `Dev tools & AI agents maio/2026` (35 já publicados em staging 2026-05-26). Demais trabalhos são evolução normal do produto/conteúdo.
+**Próxima ação:** nenhuma pendente. Batch `Dev tools & AI agents maio/2026` publicado em staging + prod (2026-05-26). Demais trabalhos são evolução normal do produto/conteúdo.
 **Antes de começar nova sessão:** ler `AGENTS.md`, `docs/INFRA.md` seção 8 e este arquivo "Decisões durante execução".
 
 **URLs ativas:**
@@ -54,7 +54,8 @@
 - **Verificação staging (psql):** import `Curadoria Bitflix — Dev tools & AI agents maio/2026` status=`done`, 35 entries (todas `catalog_status='published'`), 35 articles linkados todos `status='published'`.
 - **Migration:** nenhuma — script usa só Payload Local API sobre collections existentes (articles, open-source-catalog-entries, open-source-catalog-imports). Sem mudança de schema.
 - **revalidatePath:** desnecessário — `(site)/*` usa `dynamic='force-dynamic'` (memória `feedback_site_pages_dynamic`).
-- **Deploy prod:** PENDENTE (ação manual). Pattern: SSH `tomahawk` → `git pull --ff-only origin main` em `/application/bitflix-lp` → `docker compose ... cp scripts/seed-open-source-batch-2026-05-dev-tools.ts bitflix-lp-prod-app:/app/scripts/` (ou rebuild) → `docker compose ... exec -T bitflix-lp-prod-app pnpm exec payload run scripts/seed-open-source-batch-2026-05-dev-tools.ts`. Sem rebuild obrigatório (script puro Payload Local API, sem migration).
+- **Deploy prod 2026-05-26:** DONE. SSH `tomahawk` → `git pull --ff-only origin main` (cc6e8f1) em `/application/bitflix-lp` como `meuml` → `docker cp scripts/seed-open-source-batch-2026-05-dev-tools.ts bitflix-lp-prod-app:/app/scripts/` → `docker exec bitflix-lp-prod-app pnpm exec payload run scripts/seed-open-source-batch-2026-05-dev-tools.ts`. Sem rebuild, sem migration. 35/35 ✓, importId=5.
+- **Verificação prod:** API `https://cms.bitflix.com.br/api/open-source-catalog-imports?where[source_name][equals]=...` → `status=done`, `repos_found_count=35`, `repos_imported_count=35`. Smokes HTTPS 200: `/blog/rmux-...`, `/blog/luksbox-...`, `/blog/ymawky-...`, `/blog/catalogo-open-source`.
 
 ### Deploy 2026-05-11 — Curadoria Bitflix Claude skills & agent tooling maio/2026 (35 drafts)
 
