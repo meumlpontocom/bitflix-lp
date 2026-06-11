@@ -1,0 +1,61 @@
+# Build de producao LOCAL (parrilla2/staging) — identico ao Dockerfile.prod,
+# POREM sem "pnpm payload migrate".
+#
+# Motivo: o Postgres de staging local foi populado em modo dev (push de schema),
+# nao por migrations. Rodar migrate aqui dispararia o prompt destrutivo do Payload
+# ("data loss will occur") e arriscaria os artigos do blog. O schema ja existe no
+# banco, entao apenas "next build" (que LE o DB para prerender /blog) e suficiente.
+#
+# NAO usar para deploy real (tomahawk) — la o migrate e obrigatorio. Use Dockerfile.prod.
+FROM node:24.15-bookworm-slim AS deps
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+ARG DATABASE_URI
+ARG PAYLOAD_SECRET
+ENV DATABASE_URI=${DATABASE_URI}
+ENV PAYLOAD_SECRET=${PAYLOAD_SECRET}
+ENV NODE_ENV=production
+# (sem "pnpm payload migrate" — schema ja aplicado via dev-push no staging local)
+RUN pnpm build
+
+FROM node:24.15-bookworm-slim AS runner
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+# pnpm grava temp files no project dir no startup — /app precisa ser do node
+RUN chown node:node /app
+ENV NODE_ENV=production
+
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/.next ./.next
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/src ./src
+COPY --from=builder --chown=node:node /app/scripts ./scripts
+COPY --from=builder --chown=node:node /app/package.json ./package.json
+COPY --from=builder --chown=node:node /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder --chown=node:node /app/next.config.ts ./next.config.ts
+COPY --from=builder --chown=node:node /app/tsconfig.json ./tsconfig.json
+
+# Runtime sem root — node precisa de escrita em .next (cache de imagens etc.)
+USER node
+
+EXPOSE 3000
+
+# next direto, sem pnpm — o deps-check do pnpm em runtime tenta reinstalar
+# node_modules (sem TTY → crash loop). Equivale ao script "start" do package.json.
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "3000"]

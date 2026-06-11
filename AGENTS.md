@@ -163,6 +163,53 @@ pnpm drizzle-kit studio
 
 Lista de env vars obrigatórias em `docs/CONVENTIONS.md` seção "Operational Configuration".
 
+## Staging local em modo build (economia de RAM)
+
+O compose base sobe o `bitflix-lp-app` com `next dev` (HMR + file-watcher), que
+consome **~2,8 GB de RAM** e carrega CPU à toa. Desde **11/06/2026** o container na
+parrilla roda a **build estática** (`next start`, **~230 MB**, usuário não-root,
+`mem_limit: 1g`) usando estes dois arquivos:
+
+- **`Dockerfile.prod.local`** — igual ao `Dockerfile.prod`, **porém sem `payload migrate`**.
+  Motivo: o Postgres de staging local foi populado em modo dev (push de schema), não por
+  migrations. Rodar `payload migrate` aqui dispara o prompt destrutivo do Payload
+  (`data loss will occur`) e **arrisca os artigos do blog**. O schema já existe, então só
+  `next build` (que apenas LÊ o DB pra prerender `/blog`) é necessário.
+- **`docker-compose.prodbuild.yml`** — override que troca `pnpm dev` →
+  `node node_modules/next/dist/bin/next start` (next direto, sem pnpm — o deps-check do
+  pnpm em runtime tenta reinstalar `node_modules` e crasha sem TTY), aplica
+  `mem_limit: 1g`, usa a imagem buildada e **anula os bind-mounts de dev**
+  (`volumes: !reset null` — uma lista vazia `[]` é ignorada no merge do compose e os
+  mounts do base sobrepõem a imagem, escondendo o `.next`/código de produção).
+
+```bash
+# 1. Buildar a imagem (anexada à rede do projeto p/ o next build alcançar o Postgres).
+#    NÃO derruba a LP atual.
+cd /home/bitflix/claude_projetos/bitflix_lp
+set -a; . ./.env; set +a
+docker build --network bitflix-lp_bitflix-lp-net \
+  --build-arg DATABASE_URI="$DATABASE_URI" \
+  --build-arg PAYLOAD_SECRET="$PAYLOAD_SECRET" \
+  -f Dockerfile.prod.local -t bitflix-lp-app:staging-prod .
+
+# 2. Trocar para o build estático (mantém Postgres/MinIO locais do base):
+docker compose -f docker-compose.yml -f docker-compose.prodbuild.yml up -d --no-build bitflix-lp-app
+
+# 3. Voltar para dev (next dev):
+docker compose -f docker-compose.yml up -d bitflix-lp-app
+```
+
+**Armadilhas:**
+- ⚠️ Enquanto rodando em modo build, **sempre suba com os dois `-f`**. Um
+  `docker compose -f docker-compose.yml up -d` sozinho (sem o override) **reverte para
+  `next dev`**, pois recria o container com o `command: pnpm dev` do base.
+- ✅ **Conteúdo novo do blog NÃO exige rebuild**: as pages do `(site)/*` (incluindo
+  `/blog` e `/blog/[slug]`) usam `export const dynamic = 'force-dynamic'`, então mesmo em
+  modo build elas leem o Postgres a cada request. Rebuild da imagem só é necessário quando
+  **código** muda.
+- ⚠️ **Não confundir** com `docker-compose.prod.yml` (deploy real do tomahawk, DB externo
+  `192.168.14.20`). Aquele exige o `payload migrate` e **não** deve ser usado na parrilla.
+
 ## Ambientes
 
 | Ambiente | Host | Stack |

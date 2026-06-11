@@ -1,0 +1,32 @@
+# Override LOCAL (parrilla2/staging): roda bitflix-lp-app como build estatico
+# (pnpm start) em vez de "pnpm dev", economizando ~1,7GB de RAM + carga de CPU
+# do file-watcher. NAO confundir com docker-compose.prod.yml (deploy tomahawk,
+# DB externo) — este aqui continua usando o Postgres/MinIO locais do base.
+#
+# A imagem e buildada ANTES, fora do compose, anexada a rede do projeto para
+# que payload migrate + next build alcancem o Postgres local:
+#
+#   cd /home/bitflix/claude_projetos/bitflix_lp
+#   set -a; . ./.env; set +a
+#   docker build --network bitflix-lp_bitflix-lp-net \
+#     --build-arg DATABASE_URI="$DATABASE_URI" \
+#     --build-arg PAYLOAD_SECRET="$PAYLOAD_SECRET" \
+#     -f Dockerfile.prod -t bitflix-lp-app:staging-prod .
+#
+# Trocar para o build estatico (mantem postgres/minio do base):
+#   docker compose -f docker-compose.yml -f docker-compose.prodbuild.yml up -d --no-build bitflix-lp-app
+#
+# Voltar para dev (next dev):
+#   docker compose -f docker-compose.yml up -d bitflix-lp-app
+services:
+  bitflix-lp-app:
+    image: bitflix-lp-app:staging-prod
+    # next direto, sem pnpm (deps-check do pnpm em runtime crasha sem TTY)
+    command: ["node", "node_modules/next/dist/bin/next", "start", "-p", "3000"]
+    # Anula TODOS os volumes do base (.:/app, node_modules, .next). Precisa ser
+    # "!reset null" — uma lista vazia ([]) e ignorada no merge do compose e os
+    # mounts do base sobrepoem a imagem (escondendo o .next/code de producao).
+    volumes: !reset null
+    # Guarda-corpo: next start fica em ~200-300MB; 1g cobre picos sem deixar
+    # o container engolir a RAM do host como o next dev fazia (~2,8GB).
+    mem_limit: 1g
